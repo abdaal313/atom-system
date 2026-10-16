@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ATOM | Home</title>
+    <!-- Google Fonts for Modern Tech Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Single External CSS stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Ambient Glows -->
+    <div class="ambient-blob-1"></div>
+    <div class="ambient-blob-2"></div>
+
+    <!-- Intro Overlay -->
+    <div id="intro-overlay">
+        <div class="intro-scene">
+            <div class="floating-icon icon-food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h18M5 14a7 7 0 0 1 14 0M12 4v3"/></svg></div>
+            <div class="floating-icon icon-bill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v20l3-2 3 2 3-2 3 2V2H6z M10 7h4 M10 11h4 M10 15h2"/></svg></div>
+            <div class="floating-icon icon-coffee"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 0 1 0 8h-1 M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z M7 2v3 M11 2v3"/></svg></div>
+            <div class="floating-icon icon-mobile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3" ry="3"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+            <div class="atom-badge">
+                <span class="atom-text">ATOM<span class="atom-dot"></span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Canvas -->
+    <div class="main-canvas">
+        
+        <!-- Header -->
+        <header class="glass-header">
+            <button class="atom-logo-btn" onclick="window.location.reload()">
+                ATOM<span class="atom-logo-dot"></span>
+            </button>
+            <nav class="nav-links" id="navLinks">
+             <a href="about.html">About Us</a>
+             <a href="pricing.html">Pricing</a>
+              <a href="contact.html">Contact Us</a>
+                <a href="login.html">Login</a>
+                <a href="qr-generator.html" class="btn-qr-generator" onclick="toggleMenu()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    QR Generator
+                </a>
+            </nav>
+            <button class="mobile-menu-toggle" onclick="toggleMenu()" aria-label="Toggle Navigation">
+                <span></span><span></span><span></span>
+            </button>
+        </header>
+
+        <!-- HERO SECTION -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="hero-badge-pill">
+                    <span>⚡ Zero Commission Platform</span>
+                </div>
+                <h1 class="hero-title">
+                    Elevate Dining With A <span>Smart Digital Menu</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Ditch expensive app commissions, automate instant WhatsApp orders, and delight your guests with a lightning-fast, zero-friction digital experience right from their table.
+                </p>
+                <div class="hero-actions">
+                  <a href="menu.html" class="btn-primary-action">Launch Your Menu 🚀</a>
+                    <a href="#explore" class="btn-secondary-action">View Live Demo</a>
+                </div>
+            </div>
+
+            <div class="phone-mockup-wrapper">
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="phone-notch"></div>
+                        <div class="mock-menu-header">
+                            <div>
+                                <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--primary-orange);">CAFE CHINAR</h4>
+                                <p style="font-size: 0.65rem; color: #6E625D;">Table #04 • Live Menu</p>
+                            </div>
+                            <span style="font-size: 0.7rem; background: rgba(255,90,31,0.15); color: var(--primary-orange); padding: 2px 6px; border-radius: 6px; font-weight: 700;">QR Active</span>
+                        </div>
+                        
+                        <div class="mock-card">
+                            <div class="mock-card-icon">☕</div>
+                            <div style="flex-grow: 1;">
+                                <h5 style="font-size: 0.75rem; font-weight: 700; color: #2A2421;">Saffron Kahwa</h5>
+                                <p style="font-size: 0.6rem; color: #6E625D;">Saffron & almonds</p>
+                            </div>
+                            <span style="font-size: 0.75rem; font-weight: 800; color: var(--primary-orange);">₹140</span>
+                        </div>
+
+                        <div class="mock-card">
+                            <div class="mock-card-icon">🥐</div>
+                            <div style="flex-grow: 1;">
+                                <h5 style="font-size: 0.75rem; font-weight: 700; color: #2A2421;">Almond Croissant</h5>
+                                <p style="font-size: 0.6rem; color: #6E625D;">Freshly baked pastry</p>
+                            </div>
+                            <span style="font-size: 0.75rem; font-weight: 800; color: var(--primary-orange);">₹180</span>
+                        </div>
+
+                        <div style="margin-top: auto; background: #25D366; color: #fff; padding: 10px; border-radius: 10px; text-align: center; font-size: 0.75rem; font-weight: 700; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);">
+                            Send Order to WhatsApp ➔
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- WHY CHOOSE DIGITAL SECTION -->
+        <section class="why-section">
+            <div class="why-header">
+                <h2>Why Upgrade From <span>Traditional Menus</span>?</h2>
+                <p>Say goodbye to costly paper reprints, delayed order handling, and heavy third-party delivery cuts. Step into the modern era of cafe management.</p>
+            </div>
+
+            <div class="why-grid">
+                <div class="why-card">
+                    <div class="why-icon-box">💸</div>
+                    <h3>0% Commission Cuts</h3>
+                    <p>Traditional aggregator apps take 15% to 30% of your earnings. With ATOM, 100% of the customer's payment stays directly with your cafe.</p>
+                </div>
+
+                <div class="why-card">
+                    <div class="why-icon-box">⚡</div>
+                    <h3>Instant WhatsApp Orders</h3>
+                    <p>Orders are formatted cleanly and sent straight to the kitchen WhatsApp chat the second a table scans and checks out—zero human error.</p>
+                </div>
+
+                <div class="why-card">
+                    <div class="why-icon-box">🔄</div>
+                    <h3>Real-Time Menu Control</h3>
+                    <p>Out of an ingredient? Toggle items to "Sold Out" instantly from your dashboard, or update prices on the fly without ever reprinting physical cards.</p>
+                </div>
+            </div>
+        </section>
+        <!-- HOW IT WORKS SECTION -->
+        <section class="how-section">
+            <div class="why-header">
+                <h2>How ATOM <span>Works</span></h2>
+                <p>Launch your table-ordering ecosystem in under 3 simple steps.</p>
+            </div>
+
+            <div class="how-grid">
+                <div class="why-card">
+                    <div class="step-badge">01</div>
+                    <div class="why-icon-box">📌</div>
+                    <h3>Print & Place QR</h3>
+                    <p>Generate unique table-specific QR codes from your dashboard, print them, and place them right on your dining tables.</p>
+                </div>
+
+                <div class="why-card">
+                    <div class="step-badge">02</div>
+                    <div class="why-icon-box">📱</div>
+                    <h3>Instant Scan</h3>
+                    <p>Patrons scan the table QR code using any standard smartphone camera—requiring zero app downloads or sign-ups.</p>
+                </div>
+
+                <div class="why-card">
+                    <div class="step-badge">03</div>
+                    <div class="why-icon-box">🚀</div>
+                    <h3>Direct WhatsApp Order</h3>
+                    <p>Customers review items and tap checkout. The formatted order streams straight into your kitchen WhatsApp chat instantly.</p>
+                </div>
+            </div>
+        </section>
+        <!-- LIGHTWEIGHT & FAST SPEED SECTION -->
+        <section class="speed-section">
+            <div class="speed-grid">
+                <!-- Left Details Column -->
+                <div class="speed-content">
+                    <div class="hero-badge-pill">
+                        <span>⚡ Lightning Fast Performance</span>
+                    </div>
+                    <h2 class="speed-title">
+                        Lightweight & Fast. <span>No waiting for the page.</span>
+                    </h2>
+                    <p class="speed-desc">
+                        Our digital menu loads completely in less than 2 seconds, even on weak 3G/2G mobile networks common across Tier 2 and Tier 3 cities in India.
+                    </p>
+
+                    <div class="speed-features">
+                        <div class="speed-feature-item">
+                            <div class="speed-icon">🚀</div>
+                            <div>
+                                <h4>Zero Download Overhead</h4>
+                                <p>Acts exactly like a normal website but feels like a native mobile app.</p>
+                            </div>
+                        </div>
+                        <div class="speed-feature-item">
+                            <div class="speed-icon">📱</div>
+                            <div>
+                                <h4 style="font-family: 'Space Grotesk', sans-serif;">Mobile-first Design</h4>
+                                <p>Huge buttons, easy thumb-friendly navigation, and crystal-clear price tags.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right 3D Glassmorphic Live Orders Mockup -->
+                <div class="speed-mockup-wrapper">
+                    <div class="speed-3d-card">
+                        <div class="speed-mock-top">
+                            <span class="mock-url">admin.atom.in</span>
+                            <span class="live-badge">🔴 Live Orders (2 New)</span>
+                        </div>
+
+                        <div class="mock-order-card">
+                            <div class="mock-order-header">
+                                <span class="table-tag">Table 04</span>
+                                <span class="order-price">₹160</span>
+                            </div>
+                            <p class="order-items">2x pastry, 1x Filter Coffee</p>
+                            <div class="order-action-row">
+                                <span class="status-pill">Sent to Kitchen ➔</span>
+                            </div>
+                        </div>
+
+                        <div class="mock-order-card">
+                            <div class="mock-order-header">
+                                <span class="table-tag">Table 01</span>
+                                <span class="order-price">₹240</span>
+                            </div>
+                            <p class="order-items">1x Briyani, 2x Coke</p>
+                            <div class="order-action-row">
+                                <span class="status-pill">Sent to Kitchen ➔</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- EVERYTHING YOU NEED TO GROW SECTION -->
+        <section class="growth-section">
+            <div class="why-header">
+                <h2>Everything You Need <span>To Grow</span></h2>
+                <p>Simple yet powerful tools hidden inside a clean interface.</p>
+            </div>
+
+            <div class="growth-grid">
+                <div class="why-card">
+                    <div class="why-icon-box">🌐</div>
+                    <h3>Hindi + English Support</h3>
+                    <p>Allow local customers to view the menu in their comfortable language easily.</p>
+                </div>
+
+                <div class="why-card">
+                    <div class="why-icon-box">🎛️</div>
+                    <h3>Item out of stock?</h3>
+                    <p>Hide items instantly with a 1-click toggle from your phone. No more explaining apologies.</p>
+                </div>
+
+                <div class="why-card">
+                    <div class="why-icon-box">📱</div>
+                    <h3>Mobile Owner Dashboard</h3>
+                    <p>You don't need a computer. Manage prices and orders straight from your default mobile browser.</p>
+                </div>
+
+                <div class="why-card">
+                    <div class="why-icon-box">🎨</div>
+                    <h3>Custom Branding</h3>
+                    <p>Add your exact restaurant logo and custom theme colors to look highly premium.</p>
+                </div>
+
+                <div class="why-card">
+                    <div class="why-icon-box">📌</div>
+                    <h3>Table-wise QR Generation</h3>
+                    <p>Secure unique QRs for Table 1, Table 2, etc., allowing precise order routing.</p>
+                </div>
+
+                <div class="why-card">
+                    <div class="why-icon-box">⚡</div>
+                    <h3>Sub-second Loading</h3>
+                    <p>Optimized via Cloudflare and Vercel globally to load faster than standard sites.</p>
+                </div>
+            </div>
+        </section>
+<!-- SERVING ALL OVER KASHMIR SECTION -->
+        <section class="kashmir-section">
+            <div class="kashmir-grid">
+                <!-- Left Details Column -->
+                <div class="kashmir-content">
+                    <div class="hero-badge-pill">
+                        <span>🏔️ Local Valley Coverage</span>
+                    </div>
+                    <h2 class="speed-title">
+                        Empowering Hospitality <span>All Over Kashmir</span>
+                    </h2>
+                    <p class="speed-desc">
+                        From the bustling culinary hubs of Srinagar to the scenic tourist retreats of Gulmarg and Pahalgam—we bring modern digital transformation right to your doorstep.
+                    </p>
+
+                    <div class="kashmir-highlights">
+                        <div class="kashmir-tag">📍 Srinagar Central Hub</div>
+                        <div class="kashmir-tag">❄️ Gulmarg Resort Cafes</div>
+                        <div class="kashmir-tag">🌲 Pahalgam Valley Diners</div>
+                        <div class="kashmir-tag">🚀 24/7 Local Tech Support</div>
+                    </div>
+                </div>
+
+                <!-- Right 3D Glassmorphic Stylized Map Card -->
+                <div class="kashmir-map-wrapper">
+                    <div class="kashmir-3d-map-card">
+                        <div class="map-header">
+                            <span class="map-title">JK REGION CLUSTER</span>
+                            <span class="live-dot-pulse"></span>
+                        </div>
+                        
+                        <div class="map-visual-box">
+                            <!-- Stylized Map Node Representation -->
+                            <div class="map-node node-srinagar">
+                                <span class="node-dot"></span>
+                                <span class="node-label">Srinagar</span>
+                            </div>
+                            <div class="map-node node-gulmarg">
+                                <span class="node-dot"></span>
+                                <span class="node-label">Gulmarg</span>
+                            </div>
+                            <div class="map-node node-pahalgam">
+                                <span class="node-dot"></span>
+                                <span class="node-label">Pahalgam</span>
+                            </div>
+                            <div class="map-node node-baramulla">
+                                <span class="node-dot"></span>
+                                <span class="node-label">Baramulla</span>
+                            </div>
+                        </div>
+
+                        <div class="map-footer-note">
+                            <p>⚡ Expanding rapidly across all districts with zero setup friction.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- PRICING SECTION -->
+        <section class="pricing-section">
+            <div class="why-header">
+                <h2>Simple, Transparent <span>Pricing</span></h2>
+                <p>No hidden commissions, no surprise fees. Choose the monthly plan that fits your cafe.</p>
+            </div>
+
+            <div class="pricing-grid">
+                <!-- Plan 1: Light Green Table (Starter) -->
+                <div class="pricing-card pricing-light-green">
+                    <div class="plan-badge">STARTER PLAN</div>
+                    <div class="plan-price">₹399<span>/month</span></div>
+                    <p class="plan-desc">Perfect for small cozy cafes starting their digital menu journey.</p>
+                    <ul class="plan-features">
+                        <li>✓ Unlimited QR Code Scans</li>
+                        <li>✓ Direct WhatsApp Order Routing</li>
+                        <li>✓ Up to 50 Menu Items</li>
+                        <li>✓ Table-wise QR Generation</li>
+                        <li>✓ Standard Support</li>
+                    </ul>
+                    <a href="#get-started" class="btn-pricing btn-pricing-light">Get Started</a>
+                </div>
+
+                <!-- Plan 2: Vibrant Green Table (Pro) -->
+                <div class="pricing-card pricing-deep-green">
+                    <div class="plan-badge highlight-badge">MOST POPULAR 🚀</div>
+                    <div class="plan-price">₹699<span>/month</span></div>
+                    <p class="plan-desc">Advanced tools for high-volume cafes and bustling restaurants.</p>
+                    <ul class="plan-features">
+                        <li>✓ Everything in Starter Plan</li>
+                        <li>✓ Unlimited Menu Items & Categories</li>
+                        <li>✓ Hindi + English Multi-Language</li>
+                        <li>✓ Custom Branding & Logo Upload</li>
+                        <li>✓ Priority Local Support</li>
+                    </ul>
+                    <a href="#get-started" class="btn-pricing btn-pricing-deep">Upgrade to Pro</a>
+                </div>
+            </div>
+        </section>
+        <!-- FAQ SECTION -->
+        <section class="faq-section">
+            <div class="why-header">
+                <h2>Frequently Asked <span>Questions</span></h2>
+                <p>Got questions about how ATOM works? We've got answers.</p>
+            </div>
+
+            <div class="faq-grid">
+                <div class="why-card faq-card">
+                    <h3>Do customers need to download an app?</h3>
+                    <p>No downloads required! Customers simply open their smartphone camera, scan the table QR code, and the menu loads instantly in their mobile browser.</p>
+                </div>
+                <div class="why-card faq-card">
+                    <h3>How do orders reach the kitchen?</h3>
+                    <p>When a customer checks out, the platform automatically formats the order details and streams them straight into your kitchen counter via WhatsApp.</p>
+                </div>
+                <div class="why-card faq-card">
+                    <h3>Can I update menu items or prices?</h3>
+                    <p>Yes, absolutely. You can log into your mobile owner dashboard from any smartphone to toggle item stock status or edit prices instantly in real-time.</p>
+                </div>
+                <div class="why-card faq-card">
+                    <h3>Is there any commission fee on food orders?</h3>
+                    <p>Zero commissions! You keep 100% of your earnings. We only charge a predictable, low monthly subscription fee.</p>
+                </div>
+            </div>
+        </section>
+  
+
+        <!-- FOOTER SECTION -->
+        <footer class="site-footer">
+            <div class="footer-content">
+                <div class="footer-brand">ATOM</div>
+                <div class="footer-meta">
+                    <span class="developer-tag">Developed by Abdal Bhatt</span>
+                    <span class="version-badge">v1.1.0</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ATOM | About Us</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Link to your existing single CSS file -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Ambient Glow Refractions -->
+    <div class="ambient-blob-1"></div>
+    <div class="ambient-blob-2"></div>
+
+    <div class="main-canvas">
+        
+        <!-- Header -->
+        <header class="glass-header">
+            <!-- Logo links back to Home -->
+            <a href="index.html" class="atom-logo-btn" style="text-decoration: none;">
+                ATOM<span class="atom-logo-dot"></span>
+            </a>
+            
+            <nav class="nav-links" id="navLinks">
+                <a href="index.html">Home</a>
+                 <a href="pricing.html">Pricing</a>
+                <a href="contact.html">Contact</a>
+                <a href="login.html">Login</a>
+            </nav>
+            <button class="mobile-menu-toggle" onclick="toggleMenu()" aria-label="Toggle Navigation">
+                <span></span><span></span><span></span>
+            </button>
+        </header>
+<!-- 1. CONTACT HERO SECTION -->
+        <section class="contact-hero-section">
+            <div class="worth-glass-hero">
+                <div class="hero-badge-pill">
+                    <span>👋 We're Here to Help</span>
+                </div>
+                <h1 class="hero-title" style="font-size: clamp(2.2rem, 5vw, 3.2rem); margin-top: 16px;">
+                    Let's Build Your Cafe's <span>Digital Future</span>
+                </h1>
+                <p class="hero-subtitle" style="margin: 16px auto; text-align: center; max-width: 600px;">
+                    Whether you are ready to launch, need a custom setup, or just have a few questions about how ATOM works, our local team is just a message away.
+                </p>
+            </div>
+        </section>
+
+        <!-- 2. DIRECT CONTACT METHODS GRID -->
+        <section class="contact-methods-section">
+            <div class="contact-grid">
+                <!-- WhatsApp Card -->
+                <div class="why-card contact-card">
+                    <div class="why-icon-box" style="color: #25D366; border-color: rgba(37, 211, 102, 0.3); background: rgba(37, 211, 102, 0.1);">💬</div>
+                    <h3>WhatsApp Us</h3>
+                    <p>Instant replies for quick queries and onboarding assistance.</p>
+                    <a href="#" class="contact-link" style="color: #25D366;">+91 8899002903➔</a>
+                </div>
+
+                <!-- Email Card -->
+                <div class="why-card contact-card">
+                    <div class="why-icon-box">✉️</div>
+                    <h3>Email Support</h3>
+                    <p>For technical support, custom branding, and billing questions.</p>
+                    <a href="mailto:support@atommenu.com" class="contact-link">elarachainspvtltd@gmail.com➔</a>
+                </div>
+
+                <!-- Office Card -->
+                <div class="why-card contact-card">
+                    <div class="why-icon-box">📍</div>
+                    <h3>Local HQ</h3>
+                    <p>Proudly built and operated out of the Kashmir Valley.</p>
+                    <span class="contact-static">Srinagar, Jammu & Kashmir</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. GLASSMORPHIC CONTACT FORM -->
+        <section class="contact-form-section">
+            <div class="form-glass-container">
+                <div class="form-header">
+                    <h2>Send a <span>Direct Message</span></h2>
+                    <p>Fill out the form below and we'll get back to you within 2 hours.</p>
+                </div>
+                
+                <form class="glass-form">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>Your Name</label>
+                            <input type="text" class="glass-input" placeholder="e.g. ------">
+                        </div>
+                        <div class="input-group">
+                            <label>Cafe / Restaurant Name</label>
+                            <input type="text" class="glass-input" placeholder="e.g. -------">
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Phone Number (WhatsApp)</label>
+                        <input type="tel" class="glass-input" placeholder="+91 XXXXX XXXXX">
+                    </div>
+
+                    <div class="input-group">
+                        <label>How can we help?</label>
+                        <textarea class="glass-input" rows="4" placeholder="Tell us what you need..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-primary-action form-submit-btn">Send Message 🚀</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 4. WHITE-GLOVE ONBOARDING PROMISE -->
+        <section class="contact-promise-section">
+            <div class="promise-glass-banner">
+                <div class="promise-icon">🤝</div>
+                <div class="promise-content">
+                    <h3>Zero-Friction Setup Promise</h3>
+                    <p>Not a tech person? No problem. When you reach out, our team handles the entire initial menu setup for you. We format your categories, upload your items, and generate your first batch of QR codes within 24 hours.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. SOCIAL COMMUNITY LINKS -->
+        <section class="contact-social-section">
+            <div class="social-header">
+                <h3>Join the ATOM Community</h3>
+            </div>
+            <div class="social-pill-container">
+                <a href="#" class="social-pill">
+                    <span class="social-icon">📸</span> Instagram
+                </a>
+                <a href="#" class="social-pill">
+                    <span class="social-icon">🐦</span> Twitter (X)
+                </a>
+                <a href="#" class="social-pill">
+                    <span class="social-icon">💼</span> LinkedIn
+                </a>
+            </div>
+        </section>
+          <!-- FOOTER SECTION -->
+        <footer class="site-footer">
+            <div class="footer-content">
+                <div class="footer-brand">ATOM</div>
+                <div class="footer-meta">
+                    <span class="developer-tag">Developed by Abdal Bhatt</span>
+                    <span class="version-badge">v1.1.0</span>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Mobile Menu Script -->
+    <<script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('intro-overlay');
+            const mainCanvas = document.querySelector('.main-canvas');
+
+            // Check if the intro has already played in this browser session
+            if (sessionStorage.getItem('atomIntroPlayed')) {
+                // SKIP INTRO: Remove overlay instantly and show content immediately
+                if (overlay) overlay.remove();
+                if (mainCanvas) {
+                    mainCanvas.style.animationDelay = '0s';
+                    mainCanvas.style.animationDuration = '0.3s';
+                    mainCanvas.style.opacity = '1';
+                }
+            } else {
+                // PLAY INTRO: First time visit only
+                setTimeout(() => {
+                    if (overlay) overlay.remove();
+                    sessionStorage.setItem('atomIntroPlayed', 'true'); // Save state
+                }, 3400); 
+            }
+        });
+
+        // Mobile Menu Dropdown Toggle Function
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

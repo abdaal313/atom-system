@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ATOM | About Us</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Link to your existing single CSS file -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Ambient Glow Refractions -->
+    <div class="ambient-blob-1"></div>
+    <div class="ambient-blob-2"></div>
+
+    <div class="main-canvas">
+        
+        <!-- Header -->
+        <header class="glass-header">
+            <!-- Logo links back to Home -->
+            <a href="index.html" class="atom-logo-btn" style="text-decoration: none;">
+                ATOM<span class="atom-logo-dot"></span>
+            </a>
+            
+            <nav class="nav-links" id="navLinks">
+                <a href="index.html">Home</a>
+                 <a href="pricing.html">Pricing</a>
+                <a href="contact.html">Contact</a>
+                <a href="login.html">Login</a>
+            </nav>
+            <button class="mobile-menu-toggle" onclick="toggleMenu()" aria-label="Toggle Navigation">
+                <span></span><span></span><span></span>
+            </button>
+        </header>
+        <!-- 1. THE WORTHINESS (HERO) SECTION -->
+        <section class="worth-section">
+            <div class="worth-glass-hero">
+                <div class="hero-badge-pill">
+                    <span>💡 An Investment, Not An Expense</span>
+                </div>
+                <h1 class="hero-title" style="font-size: clamp(2.2rem, 5vw, 3.2rem); margin-top: 16px;">
+                    Stop Paying <span>The 30% App Tax</span>
+                </h1>
+                <p class="hero-subtitle" style="margin: 16px auto; text-align: center;">
+                    Traditional aggregators punish your success by taking a cut of every single order. ATOM flips the script. You pay a single, flat monthly rate. The more you sell, the more you keep. 
+                </p>
+                
+                <!-- Worthiness Comparison -->
+                <div class="worth-comparison">
+                    <div class="worth-side old-way">
+                        <h4>The Old Way</h4>
+                        <p>₹50,000 monthly sales</p>
+                        <p class="minus-stat">- 25% Platform Fee</p>
+                        <div class="worth-result lost">You lose ₹12,500</div>
+                    </div>
+                    <div class="worth-side atom-way">
+                        <h4>The ATOM Way</h4>
+                        <p>₹50,000 monthly sales</p>
+                        <p class="plus-stat">- ₹399 Flat Fee</p>
+                        <div class="worth-result kept">You keep ₹49,601</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. PRICE PSYCHOLOGY SECTION -->
+        <section class="psychology-section">
+            <div class="why-header">
+                <h2>The Logic Behind <span>Our Pricing</span></h2>
+                <p>We designed our pricing using radical transparency. No mind games, no hidden scaling fees.</p>
+            </div>
+
+            <!-- The 3 Sub-Contents -->
+            <div class="psychology-grid">
+                <div class="why-card psych-card">
+                    <div class="why-icon-box">☕</div>
+                    <h3>The "Daily Coffee" Principle</h3>
+                    <p>At ₹399/month, ATOM costs roughly <strong>₹13 a day</strong>. For less than the price of a single cup of tea, you are powering your entire restaurant's digital infrastructure 24/7.</p>
+                </div>
+
+                <div class="why-card psych-card">
+                    <div class="why-icon-box">🛡️</div>
+                    <h3>The Anti-Penalty Shield</h3>
+                    <p>Most software charges you more as your menu grows or your scans increase. We don't penalize growth. Unlimited scans and unlimited WhatsApp orders are baked into the core.</p>
+                </div>
+
+                <div class="why-card psych-card">
+                    <div class="why-icon-box">🔓</div>
+                    <h3>Zero Lock-in Anxiety</h3>
+                    <p>Long-term contracts create hesitation. By offering a strict month-to-month model, we force ourselves to earn your business every 30 days. Cancel anytime with zero friction.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. THE ACTUAL PLANS (Reused from landing page, centered and refined) -->
+        <section class="pricing-tier-section">
+            <div class="pricing-grid">
+                <!-- Starter Plan -->
+                <div class="pricing-card pricing-light-green">
+                    <div class="plan-badge">STARTER PLAN</div>
+                    <div class="plan-price">₹399<span>/month</span></div>
+                    <p class="plan-desc">Perfect for small cozy cafes starting their digital menu journey.</p>
+                    <ul class="plan-features">
+                        <li>✓ Unlimited QR Code Scans</li>
+                        <li>✓ Direct WhatsApp Order Routing</li>
+                        <li>✓ Up to 50 Menu Items</li>
+                        <li>✓ Table-wise QR Generation</li>
+                    </ul>
+                    <a href="#checkout" class="btn-pricing btn-pricing-light">Start 7-Day Free Trial</a>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="pricing-card pricing-deep-green">
+                    <div class="plan-badge highlight-badge">MOST POPULAR 🚀</div>
+                    <div class="plan-price">₹699<span>/month</span></div>
+                    <p class="plan-desc">Advanced tools for high-volume cafes and bustling restaurants.</p>
+                    <ul class="plan-features">
+                        <li>✓ Everything in Starter Plan</li>
+                        <li>✓ Unlimited Menu Items</li>
+                        <li>✓ Custom Branding & Logo Upload</li>
+                        <li>✓ Priority Local Support</li>
+                    </ul>
+                    <a href="#checkout" class="btn-pricing btn-pricing-deep">Upgrade to Pro</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER SECTION -->
+        <footer class="site-footer">
+            <div class="footer-content">
+                <div class="footer-brand">ATOM</div>
+                <div class="footer-meta" style="display: flex; align-items: center; gap: 10px;">
+                    <span class="developer-tag">Developed by Abdal Bhatt</span>
+                    <span class="version-badge">v1.1.0</span>
+                    
+                    <!-- SECRET DEVELOPER BUTTON -->
+                    <a href="developer.html" style="
+                        font-size: 14px; 
+                        text-decoration: none; 
+                        opacity: 0.2; 
+                        transition: opacity 0.3s ease;
+                        cursor: pointer;
+                    " onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.2" title="SysAdmin Console">
+                        ⚙️
+                    </a>
+                    
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Mobile Menu Script -->
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('intro-overlay');
+            const mainCanvas = document.querySelector('.main-canvas');
+
+            // Check if the intro has already played in this browser session
+            if (sessionStorage.getItem('atomIntroPlayed')) {
+                // SKIP INTRO: Remove overlay instantly and show content immediately
+                if (overlay) overlay.remove();
+                if (mainCanvas) {
+                    mainCanvas.style.animationDelay = '0s';
+                    mainCanvas.style.animationDuration = '0.3s';
+                    mainCanvas.style.opacity = '1';
+                }
+            } else {
+                // PLAY INTRO: First time visit only
+                setTimeout(() => {
+                    if (overlay) overlay.remove();
+                    sessionStorage.setItem('atomIntroPlayed', 'true'); // Save state
+                }, 3400); 
+            }
+        });
+
+        // Mobile Menu Dropdown Toggle Function
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.classList.toggle('active');
+        }
+    </script>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATOM | Dynamic Table QR Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: #f4f5f7; font-family: 'Inter', sans-serif; margin: 0; }
+        .qr-studio-container { max-width: 1000px; margin: 40px auto; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+        .control-panel, .preview-panel { background: #ffffff; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; font-weight: 600; margin-bottom: 8px; color: #111; font-size: 0.9rem; }
+        .control-group input, .control-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        
+        /* Fancy Standee Preview Card */
+        .standee-card { background: #111; color: #fff; border-radius: 16px; padding: 30px; text-align: center; position: relative; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .standee-top-bar { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: #FF5A1F; }
+        .standee-cafe { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; margin: 10px 0 0 0; }
+        .standee-table { background: rgba(255,255,255,0.1); display: inline-block; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; margin: 10px 0 20px 0; letter-spacing: 1px; }
+        .qr-frame { background: #fff; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 15px; }
+        .btn-print { width: 100%; background: #FF5A1F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 15px; transition: opacity 0.2s; }
+        .btn-print:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div id="toastContainer" style="position: fixed; top: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+
+    <header class="glass-header" style="padding: 20px 40px; display: flex; justify-content: flex-end; background: #fff; border-bottom: 1px solid #eee;">
+        <a href="dashboard.html" class="btn-secondary-action" style="text-decoration: none; padding: 10px 20px; background:#111; color:#fff; border-radius:8px; font-weight:600;">← Back to Dashboard</a>
+    </header>
+
+    <div class="qr-studio-container">
+        <!-- Controls -->
+        <div class="control-panel">
+            <h2>Table QR & Payment Studio</h2>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 25px;">Generate gorgeous, isolated, table-specific ordering & payment QR standees.</p>
+            
+            <div class="control-group">
+                <label>Table Number / Identifier</label>
+                <input type="text" id="qrTableNo" value="01" placeholder="e.g. Table 04 or Patio 2" oninput="updateQRPreview()">
+            </div>
+
+            <div class="control-group">
+                <label>Table-Wise UPI Payment ID (Optional)</label>
+                <input type="text" id="qrUPI" value="cafeowner@upi" placeholder="e.g. 9876543210@paytm" oninput="updateQRPreview()">
+            </div>
+
+            <div class="control-group">
+                <label>Brand Theme Color</label>
+                <input type="color" id="qrColor" value="#FF5A1F" style="height: 45px; padding: 4px; cursor: pointer;" onchange="updateQRPreview()">
+            </div>
+
+            <button class="btn-print" onclick="window.print()">🖨️ Print Standee</button>
+        </div>
+
+        <!-- Fancy Live Standee Preview -->
+        <div class="preview-panel">
+            <h3 style="margin-top:0; margin-bottom:20px; color:#333;">Live Standee Preview</h3>
+            <div class="standee-card" id="standeeCard">
+                <div class="standee-top-bar" id="standeeTopBar"></div>
+                <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: #aaa; margin-top: 15px;">Scan to Order & Pay</p>
+                <h2 class="standee-cafe" id="previewCafeName">Loading Cafe...</h2>
+                <div class="standee-table" id="previewTableDisplay">TABLE 01</div>
+                
+                <div class="qr-frame" id="qrImageContainer">
+                    <div style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.8rem;">Generating QR...</div>
+                </div>
+                
+                <p style="font-size: 0.8rem; color: #888; margin: 5px 0 0 0;">Powered by ATOM SaaS</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Auto-initialize QR studio preview on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateQRPreview();
+        });
+    </script>
+</body>
+</html>

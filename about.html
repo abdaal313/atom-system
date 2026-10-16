@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ATOM | About Us</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Link to your existing single CSS file -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Ambient Glow Refractions -->
+    <div class="ambient-blob-1"></div>
+    <div class="ambient-blob-2"></div>
+
+    <div class="main-canvas">
+        
+        <!-- Header -->
+        <header class="glass-header">
+            <!-- Logo links back to Home -->
+            <a href="index.html" class="atom-logo-btn" style="text-decoration: none;">
+                ATOM<span class="atom-logo-dot"></span>
+            </a>
+            
+            <nav class="nav-links" id="navLinks">
+                <a href="index.html">Home</a>
+                <a href="pricing.html">Pricing</a>
+                <a href="contact.html">Contact</a>
+                <a href="login.html">Login</a>
+            </nav>
+            <button class="mobile-menu-toggle" onclick="toggleMenu()" aria-label="Toggle Navigation">
+                <span></span><span></span><span></span>
+            </button>
+        </header>
+
+        <!-- ABOUT US SECTION -->
+        <section class="about-section" style="margin-top: 40px;">
+            <div class="why-header">
+                <h2>The Story Behind <span>ATOM</span></h2>
+                <p>Built for the independent cafes, not the giant aggregators.</p>
+            </div>
+
+            <div class="about-grid">
+                <!-- Relatable Story Card -->
+                <div class="about-glass-card story-card">
+                    <div class="quote-icon">❝</div>
+                    <h3 class="story-headline">Technology shouldn't feel like a tax.</h3>
+                    <p>
+                        It started with a simple observation at our favorite local cafes across the valley. Owners were pouring their hearts into their food and ambiance, only to lose up to 30% of their revenue to third-party aggregator apps. If they didn't use the apps, they were stuck with torn paper menus and chaotic manual ordering.
+                    </p>
+                    <p>
+                        We realized local hospitality didn't need another expensive corporate app. It needed a lightweight, lightning-fast digital bridge directly between the kitchen and the customer. 
+                    </p>
+                    <p>
+                        That's why ATOM was born. No middlemen. No hardware requirements. Just a seamless QR code, an instant WhatsApp connection, and 100% of your profits staying exactly where they belong—in your pocket.
+                    </p>
+                    
+                    <div class="founder-signature">
+                        <div class="founder-avatar">AB</div>
+                        <div class="founder-info">
+                            <h4>Abdal Bhatt</h4>
+                            <span>Creator & Developer</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Core Values Column -->
+                <div class="values-column">
+                    <div class="value-item">
+                        <div class="value-icon">🤝</div>
+                        <div class="value-text">
+                            <h4>Fairness First</h4>
+                            <p>We win only when you win. Our flat-rate monthly model ensures you keep every rupee you earn from your food.</p>
+                        </div>
+                    </div>
+
+                    <div class="value-item">
+                        <div class="value-icon">⚡</div>
+                        <div class="value-text">
+                            <h4>Built for Speed</h4>
+                            <p>Written in hyper-optimized code to ensure it loads perfectly on a customer's phone, even on a weak 2G/3G network.</p>
+                        </div>
+                    </div>
+
+                    <div class="value-item">
+                        <div class="value-icon">🏔️</div>
+                        <div class="value-text">
+                            <h4>Rooted Locally</h4>
+                            <p>Designed with the specific needs of Kashmir's bustling tourist hubs and local neighborhood cafes in mind.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </section>
+        <!-- OUR MISSION BANNER -->
+        <section class="mission-section">
+            <div class="mission-glass-banner">
+                <h2 class="mission-title">Our <span>Mission</span></h2>
+                <p class="mission-text">
+                    To democratize digital hospitality. We believe every independent cafe—no matter the size—deserves access to ultra-premium, high-performance technology without being bled dry by commission fees.
+                </p>
+            </div>
+        </section>
+
+        <!-- THE ENGINEERING PHILOSOPHY -->
+        <section class="philosophy-section">
+            <div class="why-header">
+                <h2>The Engineering <span>Philosophy</span></h2>
+                <p>Where robust architecture meets cinematic minimalism.</p>
+            </div>
+
+            <div class="philosophy-grid">
+                <div class="philosophy-card">
+                    <div class="philosophy-icon">⚙️</div>
+                    <h3>Rigorous Fundamentals</h3>
+                    <p>Driven by a deep passion for software coding and strict BTech engineering principles, ATOM isn't just a generic template. It is built to process real-time orders with the reliability of a heavily tested backend system.</p>
+                </div>
+
+                <div class="philosophy-card">
+                    <div class="philosophy-icon">🎨</div>
+                    <h3>Minimalist Aesthetics</h3>
+                    <p>Clutter confuses customers. We strip away the unnecessary, focusing strictly on what matters. The interface is designed with a cinematic, glassmorphic touch—providing a highly premium feel without sacrificing speed.</p>
+                </div>
+
+                <div class="philosophy-card">
+                    <div class="philosophy-icon">☕</div>
+                    <h3>Built for the Rush</h3>
+                    <p>Whether you're handling two tables on a quiet morning or a massive dinner rush, the underlying logic is optimized to never crash, ensuring your kitchen stays perfectly synced with your customers.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CALL TO ACTION (CTA) SECTION -->
+        <section class="about-cta-section">
+            <div class="cta-glass-box">
+                <h2>Ready to modernize your cafe?</h2>
+                <p>Join the growing network of smart restaurants taking back control of their digital menus.</p>
+                <div class="hero-actions" style="justify-content: center; margin-top: 24px;">
+                    <a href="index.html#pricing" class="btn-primary-action">View Pricing</a>
+                    <a href="index.html#contact" class="btn-secondary-action">Get in Touch</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER SECTION -->
+        <footer class="site-footer">
+            <div class="footer-content">
+                <div class="footer-brand">ATOM</div>
+                <div class="footer-meta">
+                    <span class="developer-tag">Developed by Abdal Bhatt</span>
+                    <span class="version-badge">v1.1.0</span>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Mobile Menu Script -->
+      <!-- Mobile Menu Script -->
+    <<script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('intro-overlay');
+            const mainCanvas = document.querySelector('.main-canvas');
+
+            // Check if the intro has already played in this browser session
+            if (sessionStorage.getItem('atomIntroPlayed')) {
+                // SKIP INTRO: Remove overlay instantly and show content immediately
+                if (overlay) overlay.remove();
+                if (mainCanvas) {
+                    mainCanvas.style.animationDelay = '0s';
+                    mainCanvas.style.animationDuration = '0.3s';
+                    mainCanvas.style.opacity = '1';
+                }
+            } else {
+                // PLAY INTRO: First time visit only
+                setTimeout(() => {
+                    if (overlay) overlay.remove();
+                    sessionStorage.setItem('atomIntroPlayed', 'true'); // Save state
+                }, 3400); 
+            }
+        });
+
+        // Mobile Menu Dropdown Toggle Function
+        function toggleMenu() {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.classList.toggle('active');
+        }
+    </script>
+    
+</body>
+</html>
