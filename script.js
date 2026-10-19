@@ -2,7 +2,7 @@
    ATOM MASTER SCRIPT - UNIFIED VERSION V5.2 (File Uploads & Smart UPI Placeholders)
    ========================================================================== */
 
-const API = 'http://localhost:8080';
+const API = 'https://atom-system.onrender.com';
 let liveOrdersInterval = null;
 let highestOrderId = 0; 
 window.currentShopQrUrl = ''; // Global tracker for the existing UPI QR Image
