@@ -183,7 +183,7 @@ app.get('/api/qr', authenticate, async (req, res) => {
 app.post('/api/qr', authenticate, async (req, res) => {
     try {
         const { tableNo, color } = req.body;
-        const targetUrl = `http://localhost:5500/menu.html?cafe=${req.user.id}&table=${encodeURIComponent(tableNo)}`;
+        const targetUrl = `https://abdaal313.github.io/atom-system/menu.html?cafe=${req.user.id}&table=${encodeURIComponent(tableNo)}`;
         const qrCodeDataUrl = await QRCode.toDataURL(targetUrl, { color: { dark: color || '#FF5A1F', light: '#ffffff' }, width: 400, margin: 2 });
         await pool.query('INSERT INTO qr_codes (user_id, table_no, color, target_url, qr_data_url) VALUES (?, ?, ?, ?, ?)', [req.user.id, tableNo, color || '#FF5A1F', targetUrl, qrCodeDataUrl]);
         res.status(201).json({ message: 'QR Saved' });
