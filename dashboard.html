@@ -8,107 +8,143 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- SECURITY GUARD: Instantly blocks unauthorized direct URL access -->
     <script>
         if (!localStorage.getItem('atom_token')) {
             window.location.href = 'login.html';
         }
     </script>
-
-    <style>
-        /* UPGRADE: Night Mode Variables */
-        body.dark-mode { background: #121212; color: #fff; }
-        body.dark-mode .dash-header-huge h1 { color: #fff; }
-        body.dark-mode .dash-panel { background: rgba(30, 30, 30, 0.8); border: 1px solid rgba(255,255,255,0.1); }
-        body.dark-mode .card-item { background: #222; border: 1px solid #333; color: #fff; }
-        body.dark-mode input, body.dark-mode select { background: #333; color: #fff; border: 1px solid #555; }
-        
-        .dash-header-huge { text-align: center; margin: 40px 0; position: relative; }
-        .dash-header-huge h1 { font-family: 'Space Grotesk', sans-serif; font-size: 4rem; margin: 0; letter-spacing: -2px; color: #111; }
-        .dash-header-huge p { font-family: 'Space Grotesk', sans-serif; color: #FF5A1F; font-size: 1.2rem; font-weight: 700; text-transform: uppercase; margin-top: -5px; }
-        
-        .night-mode-btn { position: absolute; right: 0; top: 20px; background: #333; color: #fff; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        
-        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; padding: 20px; max-width: 1400px; margin: 0 auto; }
-        .dash-panel { background: rgba(255,255,255,0.7); backdrop-filter: blur(12px); border-radius: 20px; padding: 24px; border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 10px 30px rgba(0,0,0,0.03); transition: all 0.3s ease; }
-        
-        .dynamic-list { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 5px;}
-        .card-item { display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 12px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .card-info { display: flex; align-items: center; gap: 15px; }
-        .card-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #eee; }
-        
-        .stock-toggle { appearance: none; width: 40px; height: 20px; background: #ccc; border-radius: 20px; position: relative; cursor: pointer; outline: none; transition: 0.3s; margin-right: 10px; }
-        .stock-toggle:checked { background: #25D366; }
-        .stock-toggle::before { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; top: 2px; left: 2px; background: #fff; transition: 0.3s; }
-        .stock-toggle:checked::before { transform: translateX(20px); }
-        
-        .btn-delete { background: #fee2e2; color: #ef4444; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-logout { background: #111; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; }
-        .btn-logout:hover { background: #ef4444; }
-        
-        .btn-add-inline { width: 100%; margin-top: 15px; background: #111; color: #fff; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .form-row-mini { display: flex; gap: 10px; margin-top: 10px; flex-direction: column; }
-        .form-row-mini input, .form-row-mini select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: 'Inter'; }
-    </style>
 </head>
-<body>
+<body class="dashboard-body">
     <div id="toastContainer" style="position: fixed; top: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 
-    <div class="main-canvas" style="padding-bottom: 100px;">
-        <header class="glass-header" style="justify-content: flex-end; gap: 12px; align-items: center; padding: 20px 40px;">
-            <a href="index.html" class="btn-secondary-action" style="text-decoration: none; padding: 10px 20px;">🏠 Landing</a>
-            <a href="qr-generator.html" class="btn-primary-action" style="text-decoration: none; padding: 10px 20px;">QR Generator</a>
+    <div class="main-canvas" style="padding-bottom: 100px; max-width: 1400px;">
+        <header class="glass-header" style="justify-content: flex-end; gap: 12px; align-items: center; padding: 15px 30px;">
+            <a href="index.html" class="btn-secondary-action" style="text-decoration: none; padding: 10px 20px;">🏠 Home</a>
             <button onclick="handleLogout()" class="btn-logout">🔒 Logout</button>
         </header>
 
+        <!-- Dynamic Shop Name Header -->
         <div class="dash-header-huge">
-            <h1>ATOM</h1>
-            <p>Creating Ease</p>
+            <h1 id="welcomeCafeName">Loading Workspace...</h1>
+            <p>ATOM Master Control</p>
             <button class="night-mode-btn" onclick="toggleNightMode()">🌙 Night Shift</button>
         </div>
 
         <div class="dash-grid">
-            <div class="dash-panel" style="grid-column: 1 / -1;">
-                <h3>Cafe Analytics</h3>
-                <div style="height: 300px; width: 100%;"><canvas id="salesChart"></canvas></div>
-            </div>
-
-            <!-- SHOPS -->
-            <div class="dash-panel">
-                <h3>🏬 Connected Shops</h3>
-                <div class="dynamic-list" id="shopsList"></div>
-                <div class="form-row-mini">
-                    <input type="text" id="newShopName" placeholder="Shop Name">
-                    <input type="text" id="newShopPhoto" placeholder="Photo URL (Optional)">
-                    <button class="btn-add-inline" onclick="addShop()">+ Add Shop</button>
+            
+            <!-- LIVE INCOMING ORDERS PANEL -->
+            <div class="dash-panel" style="grid-column: 1 / -1; border: 2px solid #FF5A1F; background: rgba(255, 255, 255, 0.9);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">🔔 Live Incoming Orders</h3>
+                    <button class="btn-add-inline" style="width: auto; margin: 0; padding: 8px 16px; background: #111;" onclick="loadLiveOrders()">↻ Refresh Data</button>
+                </div>
+                <div id="liveOrdersContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                    <p style="color: #666;">No active orders right now.</p>
                 </div>
             </div>
 
-            <!-- DIGITAL MENU -->
-            <div class="dash-panel">
-                <h3>🍔 Digital Menu</h3>
-                <div class="dynamic-list" id="productsList"></div>
-                <div class="form-row-mini">
-                    <input type="text" id="newProductName" placeholder="Item Name">
-                    <input type="number" id="newProductPrice" placeholder="Price (₹)">
-                    <select id="newProductCategory">
+            <!-- Analytics Section -->
+            <div class="dash-panel" style="grid-column: 1 / -1;">
+                <h3>📈 Live Analytics</h3>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+                    <div style="flex: 1; min-width: 300px; height: 300px; background: rgba(255,255,255,0.5); border-radius: 16px; padding: 15px;">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    <div style="flex: 1; min-width: 300px; height: 300px; background: rgba(255,255,255,0.5); border-radius: 16px; padding: 15px;">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shops/Cafe Config -->
+            <div class="dash-panel" style="grid-column: 1 / -1;">
+                <h3>🏬 Workspace Configuration</h3>
+                <div class="dynamic-list" id="shopsList" style="flex-direction: row; flex-wrap: wrap;"></div>
+                <div class="form-row-mini" style="flex-direction: row; flex-wrap: wrap; align-items: center;">
+                    <input type="text" id="newShopName" placeholder="Shop Name" style="flex: 1; min-width: 200px;">
+                    <input type="text" id="newShopPhoto" placeholder="Brand Logo URL" style="flex: 1; min-width: 200px;">
+                    <button class="btn-add-inline" style="width: auto; margin-top: 0;" onclick="addShop()">+ Set Workspace</button>
+                </div>
+            </div>
+
+            <!-- Product Management -->
+            <div class="dash-panel" style="grid-column: 1 / -1;">
+                <h3>🍔 Product Inventory & Menu</h3>
+                <div class="form-row-mini" style="flex-direction: row; flex-wrap: wrap; background: rgba(0,0,0,0.05); padding: 20px; border-radius: 16px; margin-bottom: 24px;">
+                    <input type="text" id="newProductName" placeholder="Item Name (e.g., Spicy Burger)" style="flex: 1; min-width: 200px;">
+                    <input type="number" id="newProductPrice" placeholder="Price (₹)" style="width: 120px;">
+                    <select id="newProductCategory" style="width: 150px;">
                         <option value="Beverages">Beverages</option>
                         <option value="Mains">Mains</option>
                         <option value="Desserts">Desserts</option>
+                        <option value="Specials">Specials</option>
                     </select>
-                    <input type="text" id="newProductPhoto" placeholder="Photo URL (Optional)">
-                    <button class="btn-add-inline" onclick="addProduct()">+ Add Product</button>
+                    <input type="text" id="newProductPhoto" placeholder="Image URL (Amazon style size)" style="flex: 1; min-width: 200px;">
+                    <textarea id="newProductDesc" placeholder="Item description & ingredients..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-top: 10px; font-family: 'Inter';"></textarea>
+                    <button class="btn-add-inline" onclick="addProduct()">+ Upload Product</button>
                 </div>
+                <div class="amazon-grid" id="productsList"></div>
             </div>
 
-            <!-- EMPLOYEES -->
+            <!-- Employee Roster -->
             <div class="dash-panel">
-                <h3>👥 Staff Roster</h3>
+                <h3>👥 Staff & Payroll</h3>
                 <div class="dynamic-list" id="employeesList"></div>
                 <div class="form-row-mini">
                     <input type="text" id="newEmpName" placeholder="Employee Name">
-                    <input type="text" id="newEmpRole" placeholder="Role (e.g. Barista)">
-                    <button class="btn-add-inline" onclick="addEmployee()">+ Add Staff</button>
+                    <input type="text" id="newEmpRole" placeholder="Designation">
+                    <input type="text" id="newEmpPhone" placeholder="Phone Number">
+                    <input type="number" id="newEmpSalary" placeholder="Salary (₹)">
+                    <input type="text" id="newEmpPhoto" placeholder="Photo URL">
+                    <button class="btn-add-inline" onclick="addEmployee()">+ Add Staff Member</button>
+                </div>
+            </div>
+
+            <!-- Live Menu Preview -->
+            <div class="dash-panel">
+                <h3>🟢 Live Menu Preview</h3>
+                <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">This is exactly what your customers see right now.</p>
+                <div class="dynamic-list" id="liveMenuPreview" style="background: rgba(0,0,0,0.03); padding: 15px; border-radius: 12px; border: 1px solid #eee;"></div>
+            </div>
+
+            <!-- Control Center: Kitchen, Payment & QR -->
+            <div class="dash-panel" style="grid-column: 1 / -1;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; width: 100%;">
+                    <div>
+                        <h3>💬 Kitchen Routing</h3>
+                        <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">Set the Chef's WhatsApp number.</p>
+                        <div class="form-row-mini" style="flex-wrap: nowrap; align-items: stretch; margin-bottom: 30px;">
+                            <select id="chefCountryCode" style="width: 110px; flex-shrink: 0;">
+                                <option value="+91">🇮🇳 +91</option>
+                                <option value="+1">🇺🇸 +1</option>
+                                <option value="+44">🇬🇧 +44</option>
+                            </select>
+                            <input type="text" id="chefWhatsapp" placeholder="Chef's Number" style="flex: 1; min-width: 0;">
+                            <button class="btn-add-inline" style="margin-top: 0;" onclick="saveWhatsapp()">Save</button>
+                        </div>
+
+                        <!-- NEW: UPGRADED PAYMENT UPLOAD UI -->
+                        <h3>💳 Payment Setup (UPI)</h3>
+                        <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">Allow customers to pay via UPI.</p>
+                        <div class="form-row-mini" style="flex-direction: column;">
+                            <input type="text" id="shopUpiId" placeholder="UPI ID (e.g., yourname@okhdfcbank)">
+                            
+                            <label style="font-size: 0.8rem; font-weight: 600; margin-top: 10px; color: #444;">Upload Custom QR Image (Optional):</label>
+                            <input type="file" id="shopUpiQrFile" accept="image/*" style="padding: 10px; border: 1px dashed #ccc; border-radius: 8px; background: #fff; cursor: pointer;">
+                            
+                            <button class="btn-add-inline" style="width: 100%; margin-top: 15px;" onclick="savePaymentConfig()">Save Payment Details</button>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255, 90, 31, 0.05); padding: 24px; border-radius: 16px; border: 1px solid rgba(255, 90, 31, 0.2);">
+                        <h3>🖨️ Table QR Management</h3>
+                        <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">Generate unlimited table QR codes.</p>
+                        <div class="form-row-mini" style="margin-bottom: 20px; flex-wrap: nowrap;">
+                            <input type="text" id="dashQrTable" placeholder="Table Name/No." style="flex:1; min-width: 0;">
+                            <input type="color" id="dashQrColor" value="#FF5A1F" style="width: 50px; height: 45px; cursor: pointer; border: none; padding: 0; border-radius: 8px; flex-shrink: 0;">
+                            <button class="btn-add-inline" style="margin-top: 0; white-space: nowrap; flex-shrink: 0;" onclick="generateAndSaveQR()">+ Save QR</button>
+                        </div>
+                        <div id="savedQrGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; max-height: 300px; overflow-y: auto; padding-right: 10px;"></div>
+                    </div>
                 </div>
             </div>
         </div>

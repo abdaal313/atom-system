@@ -3,98 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ATOM | Digital Menu & Direct Pay</title>
+    <title>Live Menu | ATOM</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <style>
-        .menu-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .table-badge { background: #FF5A1F; color: #fff; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; box-shadow: 0 4px 12px rgba(255,90,31,0.3); }
-        
-        .menu-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; padding-bottom: 120px; }
-        .menu-card { background: rgba(255,255,255,0.7); backdrop-filter: blur(12px); border-radius: 16px; padding: 16px; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; }
-        .menu-card img { width: 100%; height: 160px; object-fit: cover; border-radius: 12px; margin-bottom: 12px; background: #eee; }
-        .menu-details h4 { margin: 0 0 5px 0; font-size: 1.1rem; color: #111; font-family: 'Space Grotesk', sans-serif; }
-        .menu-action-row { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
-        .menu-price { font-weight: 700; font-size: 1.1rem; color: #111; }
-        .btn-add { background: #111; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
-        .btn-add:hover { background: #FF5A1F; }
-
-        /* Floating Cart & Direct UPI Checkout Bar */
-        .floating-cart { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #111; color: #fff; padding: 16px 24px; border-radius: 30px; display: flex; align-items: center; justify-content: space-between; width: 90%; max-width: 600px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; }
-        .floating-cart.visible { transform: translateX(-50%) translateY(0); }
-        .cart-info { display: flex; gap: 15px; align-items: center; font-family: 'Space Grotesk', sans-serif; }
-        .btn-upi-pay { background: #25D366; color: #fff; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.9rem; }
-    </style>
 </head>
-<body>
-    <div class="ambient-blob-1"></div>
-    <div class="ambient-blob-2"></div>
+<body style="background: #FDFBF7; padding-bottom: 50px;">
+    <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 
-    <div id="toastContainer" style="position: fixed; top: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        
+        <!-- Header Section -->
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 id="publicCafeName" style="font-family: 'Space Grotesk', sans-serif; font-size: 2.2rem; color: #111; margin: 0;">Welcome</h1>
+            <div id="publicTableBadge" style="display: inline-block; background: #FF5A1F; color: #fff; font-weight: 800; padding: 6px 16px; border-radius: 20px; margin-top: 10px;">Table --</div>
+        </div>
 
-    <div class="main-canvas" style="padding: 20px;">
-        <header class="glass-header" style="margin-bottom: 20px;">
-            <a href="index.html" class="atom-logo-btn" style="text-decoration: none;">
-                ATOM<span class="atom-logo-dot"></span>
-            </a>
-        </header>
+        <!-- Menu Items List -->
+        <div id="customerMenuGrid" style="display: flex; flex-direction: column; gap: 15px;">
+            <div style="text-align:center; color: #888; font-weight: 600; padding: 40px;">Loading live menu...</div>
+        </div>
 
-        <div class="menu-header-flex">
-            <div>
-                <h2 id="menuCafeTitle" style="font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin: 0;">Loading Cafe...</h2>
-                <p style="color: #666; margin: 5px 0 0 0; font-size: 0.9rem;">Browse our fresh digital menu and order instantly.</p>
+        <!-- Inline Cart & Checkout Section -->
+        <div id="customerCartSection" style="display: none; margin-top: 40px; background: #fff; border: 1px solid #eee; border-radius: 24px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+            <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; color: #111; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">🛒 Your Order</h3>
+            
+            <div id="cartSummaryList" style="margin-bottom: 15px;"></div>
+            
+            <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.2rem; color: #FF5A1F; margin-bottom: 25px;">
+                <span>Total:</span>
+                <span id="cartTotalAmt">₹0</span>
             </div>
-            <div class="table-badge" id="displayTableBadge">TABLE --</div>
+
+            <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; color: #111; margin-bottom: 10px;">💳 Payment Method</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 10px; background: #f9f9f9; padding: 12px; border-radius: 12px; cursor: pointer; border: 1px solid #eee;">
+                    <input type="radio" name="payMethod" value="desk" checked onchange="toggleUpiView()"> 💵 Pay at Desk
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; background: #f9f9f9; padding: 12px; border-radius: 12px; cursor: pointer; border: 1px solid #eee;">
+                    <input type="radio" name="payMethod" value="upi" onchange="toggleUpiView()"> 📱 Pay via UPI
+                </label>
+            </div>
+
+            <div id="upiDetailsBox" style="display: none; text-align: center; background: rgba(37, 211, 102, 0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(37, 211, 102, 0.3); margin-bottom: 20px;">
+                <img id="publicUpiQr" src="" style="width: 150px; height: 150px; border-radius: 8px; display: none; margin: 0 auto 10px auto;">
+                <p style="font-weight: 800; color: #1A4D2E;" id="publicUpiId"></p>
+                <p style="font-size: 0.8rem; color: #2E8B57; margin-top: 5px;">Scan QR or copy UPI ID to pay. Then confirm order.</p>
+            </div>
+
+            <button style="width: 100%; background: #FF5A1F; color: #fff; border: none; padding: 16px; border-radius: 14px; font-weight: 800; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 90, 31, 0.3);" onclick="submitCustomerOrder()">Confirm & Send to Kitchen ➔</button>
         </div>
 
-        <!-- Rendered Menu Items Dynamically Grouped by Category -->
-        <div id="menu-container">
-            <p style="text-align: center; color: #889; padding: 40px;">Fetching menu items...</p>
-        </div>
-    </div>
-
-    <!-- Floating Table-Wise Checkout & UPI Payment Bar -->
-    <div class="floating-cart" id="floatingCart">
-        <div class="cart-info">
-            <span id="cartCount">0 Items</span>
-            <span>•</span>
-            <span id="cartTotal" style="color: #25D366;">₹0</span>
-        </div>
-        <button class="btn-upi-pay" onclick="triggerUPICheckout()">⚡ Pay via UPI</button>
     </div>
 
     <script src="script.js"></script>
-    <script>
-        // Initialize menu extraction and URL parameter parsing on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const tableNo = urlParams.get('table') || '01';
-            
-            // Display dynamic table badge
-            document.getElementById('displayTableBadge').innerText = `TABLE ${tableNo.toUpperCase()}`;
-            
-            // Trigger core public menu loader
-            fetchMenuFromDatabase();
-        });
-
-        // UPI Checkout Dispatcher
-        function triggerUPICheckout() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const upiId = urlParams.get('upi') || 'merchant@upi';
-            const tableNo = urlParams.get('table') || '01';
-            const totalAmount = cart.reduce((s, i) => s + Number(i.price), 0);
-
-            if(totalAmount <= 0) return alert("Your cart is empty!");
-
-            // Generate standard UPI payment URI string
-            const upiLink = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=ATOM%20Cafe%20Order&am=${totalAmount}&cu=INR&tn=Table%20${tableNo}%20Order`;
-            
-            // Open mobile UPI app or display fallback intent
-            window.location.href = upiLink;
-            setTimeout(() => {
-                alert(`Order placed successfully for Table ${tableNo}!\nTotal: ₹${totalAmount}\nRouted to UPI ID: ${upiId}`);
-            }, 500);
-        }
-    </script>
 </body>
 </html>
