@@ -1,11 +1,11 @@
 /* ==========================================================================
-   ATOM MASTER SCRIPT - UNIFIED VERSION V5.2 (File Uploads & Smart UPI Placeholders)
+   ATOM MASTER SCRIPT - UNIFIED VERSION V5.3 (Debugged & Resilient)
    ========================================================================== */
 
 const API = 'https://atom-system.onrender.com';
 let liveOrdersInterval = null;
 let highestOrderId = 0; 
-window.currentShopQrUrl = ''; // Global tracker for the existing UPI QR Image
+window.currentShopQrUrl = '';
 
 // --- 1. GLOBAL UTILITIES ---
 function esc(v) {
@@ -28,7 +28,6 @@ window.showGlobalToast = function (message, type = 'success') {
     setTimeout(() => { toast.style.transform = 'translateX(120%)'; setTimeout(() => toast.remove(), 300); }, 4000);
 };
 
-// --- SYNTHESIZED AUDIO ALERT ---
 function playDing() {
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -109,7 +108,6 @@ function renderLiveMenuPreviewItem(p) {
     return `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #ddd;"><div style="display:flex; gap:10px; align-items:center;"><img src="${esc(p.photo_url)}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;"><div><strong style="display:block; font-size:0.9rem;">${esc(p.name)}</strong><span style="font-size:0.75rem; color:#666;">${esc(p.category)}</span></div></div><strong style="color:var(--primary-orange);">₹${esc(p.price)}</strong></div>`;
 }
 
-// --- LIVE INCOMING ORDERS ---
 async function loadLiveOrders() {
     try {
         const res = await fetch(`${API}/api/orders`, { headers: getAuthHeaders() });
@@ -129,7 +127,7 @@ async function loadLiveOrders() {
             let actionBtn = isPending ? `<button onclick="updateOrderStatus(${o.id}, 'completed')" style="background: #25D366; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;">✔ Mark Done</button>` : `<button disabled style="background: #eee; color: #999; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold;">Done</button>`;
             return `<div class="card-item" style="flex-direction: column; align-items: stretch; gap: 10px; border-left: 5px solid ${statusColor}; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);"><div style="display: flex; justify-content: space-between; align-items: center;"><strong style="font-size: 1.2rem; font-family: 'Space Grotesk', sans-serif;">Table: ${esc(o.table_no)}</strong><span style="font-weight: 800; color: #FF5A1F; font-size: 1.1rem;">₹${esc(o.total_amount)}</span></div><div style="font-size: 0.95rem; color: #444; white-space: pre-line; background: #f9f9f9; padding: 12px; border-radius: 8px; font-weight: 500;">${esc(o.order_details)}</div><div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 10px;"><span style="font-size: 0.85rem; color: #666; font-weight: 600;">💳 ${esc(o.payment_method)}</span>${actionBtn}</div></div>`;
         }).join('');
-    } catch(e) {}
+    } catch(e) { console.error("Error loading live orders:", e); }
 }
 
 async function updateOrderStatus(id, status) {
@@ -153,19 +151,19 @@ async function loadDashboardData() {
                 else { document.getElementById('chefWhatsapp').value = shops[0].chef_whatsapp; }
             }
             if(document.getElementById('shopUpiId')) document.getElementById('shopUpiId').value = shops[0].upi_id || '';
-            
-            // Save the existing QR code to memory so we don't accidentally erase it
             window.currentShopQrUrl = shops[0].upi_qr_url || ''; 
         } else {
             if(headerEl) headerEl.innerText = "Welcome, Cafe Owner";
             if(shopListEl) shopListEl.innerHTML = '<p>No workspace configured yet.</p>';
         }
-    } catch(e) {}
+    } catch(e) { console.error("Dashboard shops error:", e); }
 
-    const eRes = await fetch(`${API}/api/employees`, { headers: getAuthHeaders() });
-    const employees = await eRes.json();
-    const eContainer = document.getElementById('employeesList');
-    if(eContainer) eContainer.innerHTML = employees.map(renderEmployeeCard).join('');
+    try {
+        const eRes = await fetch(`${API}/api/employees`, { headers: getAuthHeaders() });
+        const employees = await eRes.json();
+        const eContainer = document.getElementById('employeesList');
+        if(eContainer) eContainer.innerHTML = employees.map(renderEmployeeCard).join('');
+    } catch(e) { console.error("Dashboard employees error:", e); }
 
     try {
         const mRes = await fetch(`${API}/api/menu`, { headers: getAuthHeaders() });
@@ -183,7 +181,7 @@ async function loadDashboardData() {
             if (window.salesChartInstance) window.salesChartInstance.destroy();
             window.salesChartInstance = new Chart(ctx1.getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: ['#FF5A1F', '#25D366', '#45A29E', '#999'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { title: {display: true, text: 'Menu Distribution'} } } });
         }
-    } catch(e) {}
+    } catch(e) { console.error("Dashboard menu error:", e); }
 
     try {
         const revRes = await fetch(`${API}/api/revenue`, { headers: getAuthHeaders() });
@@ -194,7 +192,7 @@ async function loadDashboardData() {
                 window.revChartInstance = new Chart(ctx2.getContext('2d'), { type: 'line', data: { labels: revData.labels, datasets: [{ label: 'Revenue (₹)', data: revData.data, borderColor: '#FF5A1F', tension: 0.4, fill: true, backgroundColor: 'rgba(255, 90, 31, 0.1)' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { title: {display: true, text: 'Weekly Revenue Trajectory'} } } });
             }
         }
-    } catch (e) {}
+    } catch (e) { console.error("Revenue chart error:", e); }
 
     loadSavedQRs(); loadLiveOrders();
     if(!liveOrdersInterval && document.getElementById('liveOrdersContainer')) { liveOrdersInterval = setInterval(loadLiveOrders, 10000); }
@@ -222,27 +220,23 @@ async function saveWhatsapp() {
     await fetch(`${API}/api/shops/whatsapp`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ chef_whatsapp: code + num }) }); window.showGlobalToast('Kitchen routing activated!', 'success');
 }
 
-// --- UPGRADED: FILE UPLOAD PAYMENT SAVER ---
 async function savePaymentConfig() {
     const upi_id = document.getElementById('shopUpiId')?.value;
     const fileInput = document.getElementById('shopUpiQrFile');
     
-    // Helper function to send to database
     const saveToDb = async (qr_url) => {
         await fetch(`${API}/api/shops/payment`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ upi_id, upi_qr_url: qr_url }) });
         window.showGlobalToast('Payment configuration saved!', 'success');
-        window.currentShopQrUrl = qr_url; // update tracking
-        if(fileInput) fileInput.value = ''; // clear input
+        window.currentShopQrUrl = qr_url;
+        if(fileInput) fileInput.value = '';
     };
 
-    // If a custom image was selected, compress it and save it!
     if (fileInput && fileInput.files.length > 0) {
         const file = fileInput.files[0];
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
             img.onload = function() {
-                // Compress it so it securely fits into the database limitations
                 const canvas = document.createElement('canvas');
                 const MAX_WIDTH = 300;
                 const scaleSize = MAX_WIDTH / img.width;
@@ -257,7 +251,6 @@ async function savePaymentConfig() {
         };
         reader.readAsDataURL(file);
     } else {
-        // If no file was uploaded, just save the ID and keep the current image (or empty)
         saveToDb(window.currentShopQrUrl || '');
     }
 }
@@ -275,7 +268,7 @@ async function loadSavedQRs() {
     try {
         const res = await fetch(`${API}/api/qr`, { headers: getAuthHeaders() }); const qrs = await res.json(); const grid = document.getElementById('savedQrGrid'); if(!grid) return;
         grid.innerHTML = qrs.map(q => `<div class="card-item" style="flex-direction: column; align-items: stretch; text-align: center; padding: 12px; border: 1px solid rgba(0,0,0,0.1);"><img src="${esc(q.qr_data_url)}" style="width: 100%; border-radius: 8px; background: #fff; padding: 5px;"><p style="font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1rem; margin: 10px 0 5px 0;">${esc(q.table_no)}</p><button class="btn-delete" style="width: 100%; padding: 8px;" onclick="deleteQR(${Number(q.id)})">Delete QR</button></div>`).join('');
-    } catch(e) {}
+    } catch(e) { console.error("Error loading QRs:", e); }
 }
 
 async function generateAndSaveQR() {
@@ -287,33 +280,105 @@ async function deleteQR(id) {
     if(!confirm('Delete this QR code permanently?')) return; await fetch(`${API}/api/qr/${id}`, { method: 'DELETE', headers: getAuthHeaders() }); loadSavedQRs();
 }
 
-// --- 5. PUBLIC MENU & CHECKOUT LOGIC ---
+// --- 5. RESILIENT PUBLIC MENU & CHECKOUT LOGIC ---
 let publicMenuData = []; let customerCart = {}; let shopDetails = {};
 
 async function initCustomerMenu() {
-    const cafeId = new URLSearchParams(window.location.search).get('cafe') || '1', tableNo = new URLSearchParams(window.location.search).get('table');
-    if (document.getElementById('publicTableBadge') && tableNo) { document.getElementById('publicTableBadge').innerText = 'Table ' + tableNo; }
+    const grid = document.getElementById('customerMenuGrid');
+    const cafeId = new URLSearchParams(window.location.search).get('cafe') || '1';
+    const tableNo = new URLSearchParams(window.location.search).get('table');
+    
+    if (document.getElementById('publicTableBadge') && tableNo) {
+        document.getElementById('publicTableBadge').innerText = 'Table ' + tableNo;
+    }
+
+    if (grid) {
+        grid.innerHTML = '<div style="text-align:center; padding:50px; color:#666;"><h3>Connecting to ATOM Cloud...</h3><p>Waking up server, please wait a few seconds...</p></div>';
+    }
+
     try {
+        console.log(`[ATOM] Fetching shop info for cafe: ${cafeId}`);
         const sRes = await fetch(`${API}/api/public/shop/${cafeId}`);
-        if(sRes.ok) { shopDetails = await sRes.json(); const nameEl = document.getElementById('publicCafeName'); if(nameEl) nameEl.innerText = shopDetails.name; } 
-        else { document.getElementById('customerMenuGrid').innerHTML = '<div style="text-align:center; padding:40px; color:#ff4646;"><h3>QR Code Expired</h3><p>This cafe workspace no longer exists.</p></div>'; return; }
+        
+        if (!sRes.ok) {
+            console.error(`[ATOM] Shop fetch failed with status: ${sRes.status}`);
+            if (grid) {
+                grid.innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#ff4646;">
+                        <h3>QR Code Expired or Invalid</h3>
+                        <p>Cafe #${esc(cafeId)} does not exist in the database.</p>
+                        <p style="font-size:0.85rem; color:#888;">Check that you have created a shop in your dashboard first.</p>
+                    </div>`;
+            }
+            return;
+        }
+
+        shopDetails = await sRes.json();
+        const nameEl = document.getElementById('publicCafeName');
+        if (nameEl && shopDetails.name) nameEl.innerText = shopDetails.name;
+
+        console.log(`[ATOM] Fetching menu items for cafe: ${cafeId}`);
         const mRes = await fetch(`${API}/api/public/menu/${cafeId}`);
-        if(mRes.ok) { publicMenuData = await mRes.json(); renderCustomerMenu(); }
-    } catch(e) {}
+        if (mRes.ok) {
+            publicMenuData = await mRes.json();
+            renderCustomerMenu();
+        } else {
+            console.error(`[ATOM] Menu fetch failed with status: ${mRes.status}`);
+            if (grid) grid.innerHTML = '<p style="text-align:center; padding:30px; color:#666;">Failed to load menu items.</p>';
+        }
+    } catch (err) {
+        console.error('[ATOM] Critical error connecting to API:', err);
+        if (grid) {
+            grid.innerHTML = `
+                <div style="text-align:center; padding:40px; color:#ff4646;">
+                    <h3>Connection Error</h3>
+                    <p>Unable to connect to ATOM backend at <code>${API}</code></p>
+                    <p style="font-size:0.85rem; color:#888;">Check if your Render server is currently building or asleep.</p>
+                </div>`;
+        }
+    }
 }
 
 function renderCustomerMenu() {
-    const grid = document.getElementById('customerMenuGrid'); if(!grid) return;
+    const grid = document.getElementById('customerMenuGrid');
+    if (!grid) return;
+
+    if (!publicMenuData || publicMenuData.length === 0) {
+        grid.innerHTML = `
+            <div style="text-align:center; padding:40px; color:#777; grid-column:1/-1;">
+                <h3>No Items on the Menu Yet</h3>
+                <p>The cafe owner has not added any active menu items to this workspace.</p>
+            </div>`;
+        renderCartSummary();
+        return;
+    }
+
     grid.innerHTML = publicMenuData.map(item => {
-        const qty = customerCart[item.id] || 0; let controlHtml = `<button onclick="updateCartItem(${item.id}, 1)" style="background:#111; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">+ Add</button>`;
-        if (qty > 0) { controlHtml = `<div style="display:flex; align-items:center; gap:10px; background:#f5f5f5; padding:4px 8px; border-radius:8px;"><button onclick="updateCartItem(${item.id}, -1)" style="border:none; background:none; font-weight:bold; font-size:1.2rem; color:#FF5A1F; cursor:pointer;">-</button><span style="font-weight:700; min-width:20px; text-align:center;">${qty}</span><button onclick="updateCartItem(${item.id}, 1)" style="border:none; background:none; font-weight:bold; font-size:1.2rem; color:#25D366; cursor:pointer;">+</button></div>`; }
-        return `<div style="display:flex; gap:15px; background:#fff; padding:15px; border-radius:16px; border:1px solid #eee; box-shadow:0 4px 10px rgba(0,0,0,0.02);"><img src="${esc(item.photo_url)}" style="width:90px; height:90px; object-fit:cover; border-radius:12px;"><div style="flex-grow:1; display:flex; flex-direction:column; justify-content:center;"><h4 style="margin:0 0 5px 0; font-family:'Space Grotesk', sans-serif; font-size:1.1rem; color:#111;">${esc(item.name)}</h4><div style="display:flex; justify-content:space-between; align-items:center; margin-top:auto;"><span style="font-weight:800; color:#FF5A1F; font-size:1.1rem;">₹${esc(item.price)}</span>${controlHtml}</div></div></div>`;
-    }).join(''); renderCartSummary();
+        const qty = customerCart[item.id] || 0;
+        let controlHtml = `<button onclick="updateCartItem(${item.id}, 1)" style="background:#111; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer;">+ Add</button>`;
+        if (qty > 0) {
+            controlHtml = `<div style="display:flex; align-items:center; gap:10px; background:#f5f5f5; padding:4px 8px; border-radius:8px;"><button onclick="updateCartItem(${item.id}, -1)" style="border:none; background:none; font-weight:bold; font-size:1.2rem; color:#FF5A1F; cursor:pointer;">-</button><span style="font-weight:700; min-width:20px; text-align:center;">${qty}</span><button onclick="updateCartItem(${item.id}, 1)" style="border:none; background:none; font-weight:bold; font-size:1.2rem; color:#25D366; cursor:pointer;">+</button></div>`;
+        }
+        return `
+            <div style="display:flex; gap:15px; background:#fff; padding:15px; border-radius:16px; border:1px solid #eee; box-shadow:0 4px 10px rgba(0,0,0,0.02);">
+                <img src="${esc(item.photo_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c')}" style="width:90px; height:90px; object-fit:cover; border-radius:12px;">
+                <div style="flex-grow:1; display:flex; flex-direction:column; justify-content:center;">
+                    <h4 style="margin:0 0 5px 0; font-family:'Space Grotesk', sans-serif; font-size:1.1rem; color:#111;">${esc(item.name)}</h4>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:auto;">
+                        <span style="font-weight:800; color:#FF5A1F; font-size:1.1rem;">₹${esc(item.price)}</span>
+                        ${controlHtml}
+                    </div>
+                </div>
+            </div>`;
+    }).join('');
+    renderCartSummary();
 }
 
 function updateCartItem(id, change) {
-    const current = customerCart[id] || 0; const newQty = current + change;
-    if (newQty <= 0) delete customerCart[id]; else customerCart[id] = newQty; renderCustomerMenu();
+    const current = customerCart[id] || 0;
+    const newQty = current + change;
+    if (newQty <= 0) delete customerCart[id]; else customerCart[id] = newQty;
+    renderCustomerMenu();
 }
 
 function renderCartSummary() {
@@ -329,38 +394,40 @@ function renderCartSummary() {
     summaryList.innerHTML = html; totalAmtEl.innerText = `₹${total}`;
 }
 
-// --- UPGRADED SMART PLACEHOLDER FALLBACK ---
 function toggleUpiView() {
-    const method = document.querySelector('input[name="payMethod"]:checked').value; 
+    const methodEl = document.querySelector('input[name="payMethod"]:checked');
+    if (!methodEl) return;
+    const method = methodEl.value; 
     const box = document.getElementById('upiDetailsBox');
+    if (!box) return;
     
     if (method === 'upi') {
         box.style.display = 'block'; 
-        document.getElementById('publicUpiId').innerText = shopDetails.upi_id || 'UPI ID not provided';
+        const idEl = document.getElementById('publicUpiId');
+        if (idEl) idEl.innerText = shopDetails.upi_id || 'UPI ID not provided';
         
         const qrImg = document.getElementById('publicUpiQr');
-        qrImg.style.display = 'block';
-        
-        // This is the Magic Placeholder: If the image fails to load, beautifully show the UPI vector logo!
-        qrImg.onerror = function() {
-            this.onerror = null; 
-            this.src = 'https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg';
-            this.style.width = '100px';
-            this.style.height = 'auto';
-            this.style.marginBottom = '10px';
-        };
+        if (qrImg) {
+            qrImg.style.display = 'block';
+            qrImg.onerror = function() {
+                this.onerror = null; 
+                this.src = 'https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg';
+                this.style.width = '100px';
+                this.style.height = 'auto';
+                this.style.marginBottom = '10px';
+            };
 
-        // If they left the URL empty or it's a blocked blob link, force the placeholder immediately
-        if(!shopDetails.upi_qr_url || shopDetails.upi_qr_url.includes('blob:')) {
-            qrImg.src = 'https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg';
-            qrImg.style.width = '100px';
-            qrImg.style.height = 'auto';
-            qrImg.style.marginBottom = '10px';
-        } else {
-            qrImg.src = shopDetails.upi_qr_url;
-            qrImg.style.width = '150px';
-            qrImg.style.height = '150px';
-            qrImg.style.marginBottom = '10px';
+            if(!shopDetails.upi_qr_url || shopDetails.upi_qr_url.includes('blob:')) {
+                qrImg.src = 'https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg';
+                qrImg.style.width = '100px';
+                qrImg.style.height = 'auto';
+                qrImg.style.marginBottom = '10px';
+            } else {
+                qrImg.src = shopDetails.upi_qr_url;
+                qrImg.style.width = '150px';
+                qrImg.style.height = '150px';
+                qrImg.style.marginBottom = '10px';
+            }
         }
     } else { 
         box.style.display = 'none'; 
@@ -369,17 +436,32 @@ function toggleUpiView() {
 
 async function submitCustomerOrder() {
     if (Object.keys(customerCart).length === 0) return;
-    const cafeId = new URLSearchParams(window.location.search).get('cafe') || '1', tableNo = new URLSearchParams(window.location.search).get('table') || 'Takeaway';
-    const payMethod = document.querySelector('input[name="payMethod"]:checked').value === 'upi' ? 'Paid via UPI' : 'Pay at Desk';
+    const cafeId = new URLSearchParams(window.location.search).get('cafe') || '1';
+    const tableNo = new URLSearchParams(window.location.search).get('table') || 'Takeaway';
+    const payMethod = document.querySelector('input[name="payMethod"]:checked')?.value === 'upi' ? 'Paid via UPI' : 'Pay at Desk';
     let total = 0, orderText = '';
-    for (const [id, qty] of Object.entries(customerCart)) { const item = publicMenuData.find(i => i.id == id); if(item) { total += item.price * qty; orderText += `▪️ ${qty}x ${item.name}\n`; } }
+    for (const [id, qty] of Object.entries(customerCart)) {
+        const item = publicMenuData.find(i => i.id == id);
+        if(item) { total += item.price * qty; orderText += `▪️ ${qty}x ${item.name}\n`; }
+    }
 
     try {
-        const res = await fetch(`${API}/api/public/order`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cafeId, tableNo, cartTotal: total, orderDetails: orderText, paymentMethod: payMethod }) });
+        const res = await fetch(`${API}/api/public/order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cafeId, tableNo, cartTotal: total, orderDetails: orderText, paymentMethod: payMethod })
+        });
         const data = await res.json();
-        if (data.success && data.waLink) { customerCart = {}; renderCustomerMenu(); window.location.href = data.waLink; } 
-        else { window.showGlobalToast('Order failed.', 'error'); }
-    } catch (e) { window.showGlobalToast('Network Error', 'error'); }
+        if (data.success && data.waLink) {
+            customerCart = {};
+            renderCustomerMenu();
+            window.location.href = data.waLink;
+        } else {
+            window.showGlobalToast('Order failed.', 'error');
+        }
+    } catch (e) {
+        window.showGlobalToast('Network Error', 'error');
+    }
 }
 
 // --- 6. DEVELOPER GOD MODE ---
@@ -399,47 +481,113 @@ async function initDeveloperDashboard() {
         });
     }
     const devToken = localStorage.getItem('atom_dev_token');
-    if (devToken) { const statsCheck = await fetchPlatformStats(); if (statsCheck === 'ok') { document.getElementById('authWall').style.display = 'none'; document.getElementById('devContentWrapper').style.display = 'block'; if (devPingTimer) clearInterval(devPingTimer); devPingTimer = setInterval(pingDatabase, 2000); } else { localStorage.removeItem('atom_dev_token'); } }
+    if (devToken) {
+        const statsCheck = await fetchPlatformStats();
+        if (statsCheck === 'ok') {
+            document.getElementById('authWall').style.display = 'none';
+            document.getElementById('devContentWrapper').style.display = 'block';
+            if (devPingTimer) clearInterval(devPingTimer);
+            devPingTimer = setInterval(pingDatabase, 2000);
+        } else {
+            localStorage.removeItem('atom_dev_token');
+        }
+    }
 }
 
-window.devLogout = function() { localStorage.removeItem('atom_dev_token'); if (devPingTimer) clearInterval(devPingTimer); document.getElementById('devContentWrapper').style.display = 'none'; document.getElementById('authWall').style.display = 'flex'; document.getElementById('devPasswordInput').value = ''; window.showGlobalToast('Console locked.', 'success'); };
+window.devLogout = function() {
+    localStorage.removeItem('atom_dev_token');
+    if (devPingTimer) clearInterval(devPingTimer);
+    document.getElementById('devContentWrapper').style.display = 'none';
+    document.getElementById('authWall').style.display = 'flex';
+    document.getElementById('devPasswordInput').value = '';
+    window.showGlobalToast('Console locked.', 'success');
+};
+
 async function pingDatabase() {
     const start = Date.now();
-    try { await fetch(`${API}/api/developer/ping`); const latency = Date.now() - start; const el = document.getElementById('devLatency'); if (el) { el.innerText = `${latency} ms`; el.style.color = latency < 50 ? '#25D366' : latency < 150 ? '#FFA500' : '#ff4646'; } } catch (e) {}
+    try {
+        await fetch(`${API}/api/developer/ping`);
+        const latency = Date.now() - start;
+        const el = document.getElementById('devLatency');
+        if (el) {
+            el.innerText = `${latency} ms`;
+            el.style.color = latency < 50 ? '#25D366' : latency < 150 ? '#FFA500' : '#ff4646';
+        }
+    } catch (e) {}
 }
 
 async function sendBroadcast() {
-    const msgInput = document.getElementById('broadcastMsg'), btn = document.querySelector('.broadcast-row button'); if (!msgInput || !btn) return; const msg = msgInput.value; if (!msg) return;
+    const msgInput = document.getElementById('broadcastMsg'), btn = document.querySelector('.broadcast-row button');
+    if (!msgInput || !btn) return;
+    const msg = msgInput.value;
+    if (!msg) return;
     btn.innerText = 'Sending... ⏳'; btn.disabled = true;
     try {
         const res = await fetch(`${API}/api/developer/broadcast`, { method: 'POST', headers: getDevHeaders(), body: JSON.stringify({ message: msg }) });
-        if (!res.ok) throw new Error('Broadcast rejected'); const data = await res.json(); msgInput.value = ''; window.showGlobalToast(`Broadcast sent to ${data.emailedCount || 0} accounts!`, 'success');
-    } catch (e) { window.showGlobalToast('Failed to send broadcast.', 'error'); } finally { btn.innerText = 'Send Broadcast'; btn.disabled = false; }
+        if (!res.ok) throw new Error('Broadcast rejected');
+        const data = await res.json();
+        msgInput.value = '';
+        window.showGlobalToast(`Broadcast sent to ${data.emailedCount || 0} accounts!`, 'success');
+    } catch (e) {
+        window.showGlobalToast('Failed to send broadcast.', 'error');
+    } finally {
+        btn.innerText = 'Send Broadcast';
+        btn.disabled = false;
+    }
 }
 
 async function fetchPlatformStats() {
     try {
-        const res = await fetch(`${API}/api/developer/stats`, { headers: getDevHeaders() }); if (!res.ok) return 'error'; const data = await res.json();
+        const res = await fetch(`${API}/api/developer/stats`, { headers: getDevHeaders() });
+        if (!res.ok) return 'error';
+        const data = await res.json();
         const setText = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
         setText('devUsers', data.totalUsers); setText('devShops', data.totalShops); setText('devProducts', data.totalProducts); setText('devActiveTenants', data.totalUsers);
-        const term = document.getElementById('terminalLogs'); if (term) { term.innerHTML = (data.logs || []).map(l => { const time = new Date(l.timestamp).toLocaleTimeString(); return `<div class="terminal-line">[${esc(time)}] ${esc(l.fullName)}: ${esc(l.action)}</div>`; }).join(''); }
-        const tbody = document.getElementById('devUsersTable'); if (tbody) { tbody.innerHTML = (data.allUsers || []).map(u => { return `<tr><td>#${Number(u.id)}</td><td><strong style="color:#fff;">${esc(u.fullName)}</strong><br><span style="font-size:0.8em; color:#889;">${esc(u.email)}</span></td><td><code>Hidden</code></td><td style="font-size:0.85em;"><strong style="color:#66FCF1;">Shops:</strong> ${esc(u.shopNames || 'None')}<br><strong style="color:#25D366;">Items:</strong> ${esc(u.productCount)}</td><td><button class="btn-ghost" onclick="impersonateUser(${Number(u.id)})">Ghost Login</button> <button class="btn-terminate" onclick="terminateUser(${Number(u.id)})">Del</button></td></tr>`; }).join(''); }
+        const term = document.getElementById('terminalLogs');
+        if (term) {
+            term.innerHTML = (data.logs || []).map(l => {
+                const time = new Date(l.timestamp).toLocaleTimeString();
+                return `<div class="terminal-line">[${esc(time)}] ${esc(l.fullName)}: ${esc(l.action)}</div>`;
+            }).join('');
+        }
+        const tbody = document.getElementById('devUsersTable');
+        if (tbody) {
+            tbody.innerHTML = (data.allUsers || []).map(u => {
+                return `<tr><td>#${Number(u.id)}</td><td><strong style="color:#fff;">${esc(u.fullName)}</strong><br><span style="font-size:0.8em; color:#889;">${esc(u.email)}</span></td><td><code>Hidden</code></td><td style="font-size:0.85em;"><strong style="color:#66FCF1;">Shops:</strong> ${esc(u.shopNames || 'None')}<br><strong style="color:#25D366;">Items:</strong> ${esc(u.productCount)}</td><td><button class="btn-ghost" onclick="impersonateUser(${Number(u.id)})">Ghost Login</button> <button class="btn-terminate" onclick="terminateUser(${Number(u.id)})">Del</button></td></tr>`;
+            }).join('');
+        }
         return 'ok';
     } catch (e) { return 'error'; }
 }
 
 async function impersonateUser(userId) {
     if (!confirm("Enter this user's dashboard?")) return;
-    try { const res = await fetch(`${API}/api/developer/impersonate/${userId}`, { headers: getDevHeaders() }); if (!res.ok) throw new Error('Rejected'); const data = await res.json(); localStorage.setItem('atom_token', data.token); localStorage.setItem('atom_cafe_id', data.userId); window.location.href = 'dashboard.html'; } catch (e) { alert('Impersonation failed'); }
+    try {
+        const res = await fetch(`${API}/api/developer/impersonate/${userId}`, { headers: getDevHeaders() });
+        if (!res.ok) throw new Error('Rejected');
+        const data = await res.json();
+        localStorage.setItem('atom_token', data.token);
+        localStorage.setItem('atom_cafe_id', data.userId);
+        window.location.href = 'dashboard.html';
+    } catch (e) { alert('Impersonation failed'); }
 }
 
 async function terminateUser(id) {
     if (!confirm('Wipe this account forever?')) return;
-    try { const res = await fetch(`${API}/api/developer/users/${id}`, { method: 'DELETE', headers: getDevHeaders() }); if (res.ok) { window.showGlobalToast('Account wiped successfully.', 'success'); fetchPlatformStats(); } } catch (e) {}
+    try {
+        const res = await fetch(`${API}/api/developer/users/${id}`, { method: 'DELETE', headers: getDevHeaders() });
+        if (res.ok) { window.showGlobalToast('Account wiped successfully.', 'success'); fetchPlatformStats(); }
+    } catch (e) {}
 }
 
 window.flushBackendLogs = async function() {
-    try { const res = await fetch(`${API}/api/developer/logs`, { method: 'DELETE', headers: getDevHeaders() }); if (res.ok) { document.getElementById('terminalLogs').innerHTML = '<div class="terminal-line">[System] Audit logs wiped clean by admin.</div>'; window.showGlobalToast('Activity audit logs cleared.', 'success'); } } catch (e) {}
+    try {
+        const res = await fetch(`${API}/api/developer/logs`, { method: 'DELETE', headers: getDevHeaders() });
+        if (res.ok) {
+            document.getElementById('terminalLogs').innerHTML = '<div class="terminal-line">[System] Audit logs wiped clean by admin.</div>';
+            window.showGlobalToast('Activity audit logs cleared.', 'success');
+        }
+    } catch (e) {}
 };
 
 // --- 7. INITIALIZATION ---
