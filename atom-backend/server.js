@@ -30,7 +30,30 @@ const pool = mysql.createPool({
     ssl: { rejectUnauthorized: true }, connectTimeout: 10000
 });
 
-const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } });
+// --- EMAIL ---
+// Render's free plan blocks SMTP ports, so on Render we send through Brevo's HTTPS API.
+// Locally (no BREVO_API_KEY) it falls back to Gmail SMTP.
+const EMAIL_FROM = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+const gmailTransporter = process.env.EMAIL_USER
+    ? nodemailer.createTransport({ service: 'gmail', auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } })
+    : null;
+
+async function sendEmail({ to, bcc, subject, html }) {
+    if (process.env.BREVO_API_KEY) {
+        if (!EMAIL_FROM) throw new Error('EMAIL_FROM is not set');
+        const body = { sender: { name: 'ATOM', email: EMAIL_FROM }, to: [{ email: to }], subject, htmlContent: html };
+        if (bcc && bcc.length) body.bcc = bcc.map(email => ({ email }));
+        const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: { 'api-key': process.env.BREVO_API_KEY, 'content-type': 'application/json', accept: 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error(`Brevo ${res.status}: ${await res.text()}`);
+        return;
+    }
+    if (!gmailTransporter) throw new Error('No email provider configured. Set BREVO_API_KEY and EMAIL_FROM.');
+    await gmailTransporter.sendMail({ from: `"ATOM" <${EMAIL_FROM}>`, to, bcc, subject, html });
+}
 
 const authenticate = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
@@ -61,6 +84,16 @@ app.post('/api/signup', async (req, res) => {
         const hash = await bcrypt.hash(password, 10);
         const [result] = await pool.query('INSERT INTO users (fullName, email, password) VALUES (?, ?, ?)', [fullName, email, hash]);
         await logActivity(result.insertId, 'Created account');
+        // Welcome email (does not block signup if it fails)
+        sendEmail({
+            to: email,
+            subject: 'Welcome to ATOM',
+            html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto">
+                <h2 style="color:#FF5A1F">Welcome to ATOM, ${escapeHtml(fullName)}!</h2>
+                <p>Your account is ready. Log in to set up your menu, QR codes and kitchen routing.</p>
+                <p><a href="${BASE_URL}/login.html" style="background:#FF5A1F;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Open Dashboard</a></p>
+            </div>`
+        }).catch(e => console.error('Welcome email failed:', e.message));
         res.status(201).json({ message: 'Success' });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -80,10 +113,38 @@ app.post('/api/forgot-password', async (req, res) => {
         const { email } = req.body;
         const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (users.length === 0) return res.status(404).json({ error: 'Email not found.' });
-        const resetToken = jwt.sign({ id: users[0].id }, JWT_SECRET, { expiresIn: '1h' });
+        const resetToken = jwt.sign({ id: users[0].id, purpose: 'reset' }, JWT_SECRET, { expiresIn: '1h' });
         const resetLink = `${BASE_URL}/reset-password.html?token=${resetToken}`;
-        await transporter.sendMail({ from: `"ATOM" <${process.env.EMAIL_USER}>`, to: email, subject: 'Password Recovery', html: `<p><a href="${resetLink}">Reset Password</a></p>` });
+        await sendEmail({
+            to: email,
+            subject: 'ATOM Password Recovery',
+            html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto">
+                <h2 style="color:#FF5A1F">Reset your password</h2>
+                <p>Click the button below to choose a new password. This link expires in 1 hour.</p>
+                <p><a href="${resetLink}" style="background:#FF5A1F;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Reset Password</a></p>
+                <p style="color:#888;font-size:12px">If you did not request this, you can ignore this email.</p>
+            </div>`
+        });
         res.json({ message: 'Recovery email sent!' });
+    } catch (error) {
+        console.error('Forgot-password email failed:', error.message);
+        res.status(500).json({ error: 'Could not send the recovery email. Please try again later.' });
+    }
+});
+
+app.post('/api/reset-password', async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+        if (!token || !newPassword) return res.status(400).json({ error: 'Token and new password are required.' });
+        if (newPassword.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+        let decoded;
+        try { decoded = jwt.verify(token, JWT_SECRET); }
+        catch (e) { return res.status(400).json({ error: 'Reset link is invalid or has expired.' }); }
+        if (decoded.purpose !== 'reset') return res.status(400).json({ error: 'Invalid reset link.' });
+        const hash = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password = ? WHERE id = ?', [hash, decoded.id]);
+        await logActivity(decoded.id, 'Reset password');
+        res.json({ message: 'Password updated' });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
@@ -282,9 +343,8 @@ app.post('/api/developer/broadcast', requireDeveloper, async (req, res) => {
         if (!message) return res.status(400).json({ error: 'Message required' });
         const [users] = await pool.query('SELECT email FROM users');
         if (users.length === 0) return res.json({ emailedCount: 0 });
-        await transporter.sendMail({
-            from: `"ATOM" <${process.env.EMAIL_USER}>`,
-            to: process.env.EMAIL_USER,
+        await sendEmail({
+            to: EMAIL_FROM,
             bcc: users.map(u => u.email),
             subject: 'ATOM Announcement',
             html: `<p>${escapeHtml(message)}</p>`

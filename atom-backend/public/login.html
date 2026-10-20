@@ -2,18 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATOM | Login</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    
+
     <style>
+        /* No intro animation on this page, so show content immediately */
+        .main-canvas { animation-delay: 0s !important; }
+
         .auth-section { display: flex; justify-content: center; align-items: center; min-height: 80vh; padding: 20px; }
-        .auth-glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 40px; border-radius: 24px; width: 100%; max-width: 400px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); margin: 40px auto; }
+        .auth-glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); padding: 40px; border-radius: 24px; width: 100%; max-width: 400px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); margin: 40px auto; }
         .auth-toggle-container { position: relative; display: flex; background: rgba(0, 0, 0, 0.05); border-radius: 30px; padding: 5px; margin-bottom: 30px; }
         .toggle-slider { position: absolute; top: 5px; left: 5px; width: calc(50% - 5px); height: calc(100% - 10px); background: #FF5A1F; border-radius: 30px; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); z-index: 0; }
         .toggle-btn { flex: 1; background: transparent; border: none; padding: 12px 0; font-family: 'Inter', sans-serif; font-weight: 600; color: #555; cursor: pointer; position: relative; z-index: 1; transition: color 0.3s ease; }
         .toggle-btn.active { color: #fff; }
+
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: #111; }
+        .pw-wrap { position: relative; display: flex; align-items: center; }
+        .pw-wrap .glass-input { padding-right: 48px; }
+        .pw-eye { position: absolute; right: 6px; width: 40px; height: 40px; background: none; border: none; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+
+        @media (max-width: 480px) {
+            .auth-section { padding: 10px; min-height: auto; }
+            .auth-glass-panel { padding: 28px 20px; margin: 20px auto; }
+            .glass-input { font-size: 16px; } /* stops iPhone auto-zoom on focus */
+            #toastContainer { left: 12px !important; right: 12px !important; top: 12px !important; }
+        }
     </style>
 </head>
 <body>
@@ -32,32 +48,32 @@
                 <a href="login.html" class="active">Login</a>
                 <a href="dashboard.html">Dashboard</a>
             </nav>
-            <button class="mobile-menu-toggle" onclick="toggleMenu()">
+            <button class="mobile-menu-toggle" type="button" aria-label="Open menu" onclick="toggleMenu()">
                 <span></span><span></span><span></span>
             </button>
         </header>
 
         <section class="auth-section">
             <div class="auth-glass-panel">
-                
+
                 <div class="auth-toggle-container">
                     <div class="toggle-slider" id="toggleSlider"></div>
-                    <button class="toggle-btn active" id="toggleLogin" onclick="switchAuth('login')">Login</button>
-                    <button class="toggle-btn" id="toggleSignup" onclick="switchAuth('signup')">Sign Up</button>
+                    <button type="button" class="toggle-btn active" id="toggleLogin" onclick="switchAuth('login')">Login</button>
+                    <button type="button" class="toggle-btn" id="toggleSignup" onclick="switchAuth('signup')">Sign Up</button>
                 </div>
 
                 <!-- LOGIN FORM -->
                 <form id="loginForm" class="glass-form active-form" onsubmit="handleLogin(event)">
                     <div class="input-group">
-                        <label>Email Address</label>
-                        <input type="email" id="loginEmail" class="glass-input" required placeholder="manager@cafe.com">
+                        <label for="loginEmail">Email Address</label>
+                        <input type="email" id="loginEmail" class="glass-input" required placeholder="manager@cafe.com" autocomplete="email">
                     </div>
-                    
-                    <div class="input-group" style="position: relative;">
-                        <label>Password</label>
-                        <div style="position: relative; display: flex; align-items: center;">
-                            <input type="password" id="loginPassword" class="glass-input" required placeholder="••••••••" style="width: 100%; padding-right: 45px;">
-                            <button type="button" onclick="togglePasswordVisibility('loginPassword', this)" style="position: absolute; right: 12px; background: none; border: none; cursor: pointer; font-size: 1.1rem;" title="Show/Hide Password">👁️</button>
+
+                    <div class="input-group">
+                        <label for="loginPassword">Password</label>
+                        <div class="pw-wrap">
+                            <input type="password" id="loginPassword" class="glass-input" required placeholder="••••••••" autocomplete="current-password">
+                            <button type="button" class="pw-eye" onclick="togglePasswordVisibility('loginPassword', this)" aria-label="Show password">👁️</button>
                         </div>
                     </div>
 
@@ -65,26 +81,29 @@
                         <a href="#" onclick="triggerForgotPassword(event)" style="color: #FF5A1F; font-size: 0.85rem; text-decoration: none; font-weight: 600;">Forgot Password?</a>
                     </div>
 
-                    <button type="submit" class="btn-primary-action" style="margin-top: 5px; width: 100%;">Access Dashboard</button>
+                    <button type="submit" class="btn-primary-action" style="margin-top: 5px; width: 100%; border: none; cursor: pointer;">Access Dashboard</button>
                 </form>
 
                 <!-- SIGNUP FORM -->
                 <form id="signupForm" class="glass-form hidden-form" style="display: none;" onsubmit="handleSignup(event)">
                     <div class="input-group">
-                        <label>Full Name</label>
-                        <input type="text" id="signupName" class="glass-input" required placeholder="">
+                        <label for="signupName">Full Name</label>
+                        <input type="text" id="signupName" class="glass-input" required autocomplete="name">
                     </div>
                     <div class="input-group">
-                        <label>Email Address</label>
-                        <input type="email" id="signupEmail" class="glass-input" required placeholder="">
+                        <label for="signupEmail">Email Address</label>
+                        <input type="email" id="signupEmail" class="glass-input" required autocomplete="email">
                     </div>
                     <div class="input-group">
-                        <label>Create Password</label>
-                        <input type="password" id="signupPassword" class="glass-input" required placeholder="••••••••">
+                        <label for="signupPassword">Create Password</label>
+                        <div class="pw-wrap">
+                            <input type="password" id="signupPassword" class="glass-input" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+                            <button type="button" class="pw-eye" onclick="togglePasswordVisibility('signupPassword', this)" aria-label="Show password">👁️</button>
+                        </div>
                     </div>
-                    <button type="submit" id="signupBtn" class="btn-primary-action" style="margin-top: 10px; width: 100%;">Create Account</button>
+                    <button type="submit" id="signupBtn" class="btn-primary-action" style="margin-top: 10px; width: 100%; border: none; cursor: pointer;">Create Account</button>
                 </form>
-                
+
             </div>
         </section>
     </div>

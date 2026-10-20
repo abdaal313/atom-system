@@ -669,3 +669,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('customerMenuGrid')) initCustomerMenu();
     if (isDeveloperPage()) initDeveloperDashboard();
 });
+
+// --- 8. UI HELPERS (mobile menu + password eye) ---
+window.toggleMenu = function () {
+    const nav = document.getElementById('navLinks') || document.querySelector('.nav-links');
+    if (nav) nav.classList.toggle('active');
+};
+
+window.togglePasswordVisibility = function (inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    if (btn) {
+        btn.textContent = show ? '🙈' : '👁️';
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    }
+};
+
+// Close the mobile menu after tapping a link
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.nav-links a').forEach(a => {
+        a.addEventListener('click', () => document.querySelectorAll('.nav-links').forEach(n => n.classList.remove('active')));
+    });
+});

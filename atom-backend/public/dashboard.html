@@ -13,13 +13,94 @@
             window.location.href = 'login.html';
         }
     </script>
+
+    <style>
+        /* No intro animation on this page, so show content immediately */
+        .main-canvas { animation-delay: 0s !important; }
+
+        .dash-canvas { padding-bottom: 100px; max-width: 1400px; }
+        .dash-top-header { justify-content: flex-end; gap: 12px; align-items: center; padding: 15px 30px; }
+        .dash-top-header .btn-secondary-action { padding: 10px 20px; text-decoration: none; }
+
+        .panel-wide { grid-column: 1 / -1; }
+        .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+        .panel-head h3 { margin: 0; }
+        .orders-panel { border: 2px solid #FF5A1F; background: rgba(255, 255, 255, 0.9); }
+        .btn-refresh { width: auto; margin: 0; padding: 8px 16px; background: #111; }
+
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 15px; max-height: 400px; overflow-y: auto; padding-right: 6px; }
+        .chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 20px; margin-top: 20px; }
+        .chart-box { position: relative; height: 300px; min-width: 0; background: rgba(255, 255, 255, 0.5); border-radius: 16px; padding: 15px; }
+
+        .shops-list { flex-direction: row; flex-wrap: wrap; }
+        .product-form { background: rgba(0, 0, 0, 0.05); padding: 20px; border-radius: 16px; margin-bottom: 24px; }
+        .f-grow { flex: 1; min-width: 200px; }
+        .f-price { width: 120px; }
+        .f-cat { width: 150px; }
+        .f-full { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-top: 10px; font-family: 'Inter', sans-serif; }
+        .btn-top0 { width: auto; margin-top: 0; }
+        .form-row-mini.stack { flex-direction: column; align-items: stretch; }
+        .row-nowrap { flex-wrap: nowrap; align-items: stretch; }
+        .row-nowrap select { width: 110px; flex-shrink: 0; }
+        .row-nowrap .f-flex { flex: 1; min-width: 0; }
+        .row-nowrap .btn-add-inline { flex-shrink: 0; white-space: nowrap; }
+        .color-pick { width: 50px; height: 45px; cursor: pointer; border: none; padding: 0; border-radius: 8px; flex-shrink: 0; }
+
+        .hint { font-size: 0.85rem; color: #666; margin-bottom: 15px; }
+        .preview-list { background: rgba(0, 0, 0, 0.03); padding: 15px; border-radius: 12px; border: 1px solid #eee; }
+        .control-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 30px; width: 100%; }
+        .qr-box { background: rgba(255, 90, 31, 0.05); padding: 24px; border-radius: 16px; border: 1px solid rgba(255, 90, 31, 0.2); min-width: 0; }
+        .qr-saved-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr)); gap: 15px; max-height: 300px; overflow-y: auto; padding-right: 10px; }
+        .file-input { padding: 10px; border: 1px dashed #ccc; border-radius: 8px; background: #fff; cursor: pointer; }
+        .amazon-grid { grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); }
+        #employeesList .card-item { flex-wrap: wrap; gap: 12px; }
+
+        /* ---------- MOBILE ---------- */
+        @media (max-width: 768px) {
+            .dash-canvas { padding: 10px 10px 80px; }
+            .dash-top-header { padding: 10px 14px; }
+            .dash-top-header .btn-secondary-action, .dash-top-header .btn-logout { padding: 10px 14px; font-size: 0.9rem; }
+
+            .dash-header-huge { margin: 22px 8px; }
+            .dash-header-huge h1 { font-size: 1.8rem; word-break: break-word; }
+            .night-mode-btn { position: static; margin-top: 14px; }
+
+            .dash-grid { padding: 8px 0; gap: 16px; }
+            .dash-panel { padding: 16px; border-radius: 16px; }
+            .dash-panel h3 { font-size: 1.15rem; }
+
+            .chart-box { height: 260px; padding: 10px; }
+            .orders-grid { max-height: 460px; }
+
+            /* stacked forms: every field full width */
+            .form-row-mini:not(.row-nowrap) { flex-direction: column; align-items: stretch; }
+            .form-row-mini:not(.row-nowrap) > * { width: 100% !important; min-width: 0 !important; }
+            .form-row-mini input, .form-row-mini select, .form-row-mini textarea { font-size: 16px; } /* stops iPhone zoom */
+            .product-form { padding: 14px; }
+
+            /* single-line rows wrap instead of overflowing */
+            .row-nowrap { flex-wrap: wrap; }
+            .row-nowrap > * { flex: 1 1 140px; }
+            .row-nowrap select { width: auto; }
+            .row-nowrap .color-pick { flex: 0 0 56px; width: 56px; }
+            .row-nowrap .btn-add-inline { flex: 1 1 100%; }
+
+            .control-grid { gap: 20px; }
+            .qr-box { padding: 16px; }
+            .amazon-img-box { height: 190px; }
+            .btn-add-inline, .btn-delete { min-height: 44px; }
+            .btn-refresh { min-height: 40px; }
+
+            #toastContainer { left: 12px !important; right: 12px !important; top: 12px !important; }
+        }
+    </style>
 </head>
 <body class="dashboard-body">
     <div id="toastContainer" style="position: fixed; top: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 
-    <div class="main-canvas" style="padding-bottom: 100px; max-width: 1400px;">
-        <header class="glass-header" style="justify-content: flex-end; gap: 12px; align-items: center; padding: 15px 30px;">
-            <a href="index.html" class="btn-secondary-action" style="text-decoration: none; padding: 10px 20px;">🏠 Home</a>
+    <div class="main-canvas dash-canvas">
+        <header class="glass-header dash-top-header">
+            <a href="index.html" class="btn-secondary-action">🏠 Home</a>
             <button onclick="handleLogout()" class="btn-logout">🔒 Logout</button>
         </header>
 
@@ -31,56 +112,52 @@
         </div>
 
         <div class="dash-grid">
-            
+
             <!-- LIVE INCOMING ORDERS PANEL -->
-            <div class="dash-panel" style="grid-column: 1 / -1; border: 2px solid #FF5A1F; background: rgba(255, 255, 255, 0.9);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="margin: 0;">🔔 Live Incoming Orders</h3>
-                    <button class="btn-add-inline" style="width: auto; margin: 0; padding: 8px 16px; background: #111;" onclick="loadLiveOrders()">↻ Refresh Data</button>
+            <div class="dash-panel panel-wide orders-panel">
+                <div class="panel-head">
+                    <h3>🔔 Live Incoming Orders</h3>
+                    <button class="btn-add-inline btn-refresh" onclick="loadLiveOrders()">↻ Refresh Data</button>
                 </div>
-                <div id="liveOrdersContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                <div id="liveOrdersContainer" class="orders-grid">
                     <p style="color: #666;">No active orders right now.</p>
                 </div>
             </div>
 
             <!-- Analytics Section -->
-            <div class="dash-panel" style="grid-column: 1 / -1;">
+            <div class="dash-panel panel-wide">
                 <h3>📈 Live Analytics</h3>
-                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
-                    <div style="flex: 1; min-width: 300px; height: 300px; background: rgba(255,255,255,0.5); border-radius: 16px; padding: 15px;">
-                        <canvas id="revenueChart"></canvas>
-                    </div>
-                    <div style="flex: 1; min-width: 300px; height: 300px; background: rgba(255,255,255,0.5); border-radius: 16px; padding: 15px;">
-                        <canvas id="salesChart"></canvas>
-                    </div>
+                <div class="chart-row">
+                    <div class="chart-box"><canvas id="revenueChart"></canvas></div>
+                    <div class="chart-box"><canvas id="salesChart"></canvas></div>
                 </div>
             </div>
 
             <!-- Shops/Cafe Config -->
-            <div class="dash-panel" style="grid-column: 1 / -1;">
+            <div class="dash-panel panel-wide">
                 <h3>🏬 Workspace Configuration</h3>
-                <div class="dynamic-list" id="shopsList" style="flex-direction: row; flex-wrap: wrap;"></div>
-                <div class="form-row-mini" style="flex-direction: row; flex-wrap: wrap; align-items: center;">
-                    <input type="text" id="newShopName" placeholder="Shop Name" style="flex: 1; min-width: 200px;">
-                    <input type="text" id="newShopPhoto" placeholder="Brand Logo URL" style="flex: 1; min-width: 200px;">
-                    <button class="btn-add-inline" style="width: auto; margin-top: 0;" onclick="addShop()">+ Set Workspace</button>
+                <div class="dynamic-list shops-list" id="shopsList"></div>
+                <div class="form-row-mini">
+                    <input type="text" id="newShopName" placeholder="Shop Name" class="f-grow">
+                    <input type="text" id="newShopPhoto" placeholder="Brand Logo URL" class="f-grow">
+                    <button class="btn-add-inline btn-top0" onclick="addShop()">+ Set Workspace</button>
                 </div>
             </div>
 
             <!-- Product Management -->
-            <div class="dash-panel" style="grid-column: 1 / -1;">
-                <h3>🍔 Product Inventory & Menu</h3>
-                <div class="form-row-mini" style="flex-direction: row; flex-wrap: wrap; background: rgba(0,0,0,0.05); padding: 20px; border-radius: 16px; margin-bottom: 24px;">
-                    <input type="text" id="newProductName" placeholder="Item Name (e.g., Spicy Burger)" style="flex: 1; min-width: 200px;">
-                    <input type="number" id="newProductPrice" placeholder="Price (₹)" style="width: 120px;">
-                    <select id="newProductCategory" style="width: 150px;">
+            <div class="dash-panel panel-wide">
+                <h3>🍔 Product Inventory &amp; Menu</h3>
+                <div class="form-row-mini product-form">
+                    <input type="text" id="newProductName" placeholder="Item Name (e.g., Spicy Burger)" class="f-grow">
+                    <input type="number" id="newProductPrice" placeholder="Price (₹)" class="f-price">
+                    <select id="newProductCategory" class="f-cat">
                         <option value="Beverages">Beverages</option>
                         <option value="Mains">Mains</option>
                         <option value="Desserts">Desserts</option>
                         <option value="Specials">Specials</option>
                     </select>
-                    <input type="text" id="newProductPhoto" placeholder="Image URL (Amazon style size)" style="flex: 1; min-width: 200px;">
-                    <textarea id="newProductDesc" placeholder="Item description & ingredients..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-top: 10px; font-family: 'Inter';"></textarea>
+                    <input type="text" id="newProductPhoto" placeholder="Image URL (Amazon style size)" class="f-grow">
+                    <textarea id="newProductDesc" placeholder="Item description &amp; ingredients..." class="f-full"></textarea>
                     <button class="btn-add-inline" onclick="addProduct()">+ Upload Product</button>
                 </div>
                 <div class="amazon-grid" id="productsList"></div>
@@ -88,7 +165,7 @@
 
             <!-- Employee Roster -->
             <div class="dash-panel">
-                <h3>👥 Staff & Payroll</h3>
+                <h3>👥 Staff &amp; Payroll</h3>
                 <div class="dynamic-list" id="employeesList"></div>
                 <div class="form-row-mini">
                     <input type="text" id="newEmpName" placeholder="Employee Name">
@@ -103,47 +180,45 @@
             <!-- Live Menu Preview -->
             <div class="dash-panel">
                 <h3>🟢 Live Menu Preview</h3>
-                <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">This is exactly what your customers see right now.</p>
-                <div class="dynamic-list" id="liveMenuPreview" style="background: rgba(0,0,0,0.03); padding: 15px; border-radius: 12px; border: 1px solid #eee;"></div>
+                <p class="hint">This is exactly what your customers see right now.</p>
+                <div class="dynamic-list preview-list" id="liveMenuPreview"></div>
             </div>
 
             <!-- Control Center: Kitchen, Payment & QR -->
-            <div class="dash-panel" style="grid-column: 1 / -1;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; width: 100%;">
-                    <div>
+            <div class="dash-panel panel-wide">
+                <div class="control-grid">
+                    <div style="min-width: 0;">
                         <h3>💬 Kitchen Routing</h3>
-                        <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">Set the Chef's WhatsApp number.</p>
-                        <div class="form-row-mini" style="flex-wrap: nowrap; align-items: stretch; margin-bottom: 30px;">
-                            <select id="chefCountryCode" style="width: 110px; flex-shrink: 0;">
+                        <p class="hint">Set the Chef's WhatsApp number.</p>
+                        <div class="form-row-mini row-nowrap" style="margin-bottom: 30px;">
+                            <select id="chefCountryCode">
                                 <option value="+91">🇮🇳 +91</option>
                                 <option value="+1">🇺🇸 +1</option>
                                 <option value="+44">🇬🇧 +44</option>
                             </select>
-                            <input type="text" id="chefWhatsapp" placeholder="Chef's Number" style="flex: 1; min-width: 0;">
-                            <button class="btn-add-inline" style="margin-top: 0;" onclick="saveWhatsapp()">Save</button>
+                            <input type="text" id="chefWhatsapp" placeholder="Chef's Number" class="f-flex" inputmode="tel">
+                            <button class="btn-add-inline btn-top0" onclick="saveWhatsapp()">Save</button>
                         </div>
 
-                        <!-- NEW: UPGRADED PAYMENT UPLOAD UI -->
                         <h3>💳 Payment Setup (UPI)</h3>
-                        <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">Allow customers to pay via UPI.</p>
-                        <div class="form-row-mini" style="flex-direction: column;">
+                        <p class="hint">Allow customers to pay via UPI.</p>
+                        <div class="form-row-mini stack">
                             <input type="text" id="shopUpiId" placeholder="UPI ID (e.g., yourname@okhdfcbank)">
-                            
                             <label style="font-size: 0.8rem; font-weight: 600; margin-top: 10px; color: #444;">Upload Custom QR Image (Optional):</label>
-                            <input type="file" id="shopUpiQrFile" accept="image/*" style="padding: 10px; border: 1px dashed #ccc; border-radius: 8px; background: #fff; cursor: pointer;">
-                            
+                            <input type="file" id="shopUpiQrFile" accept="image/*" class="file-input">
                             <button class="btn-add-inline" style="width: 100%; margin-top: 15px;" onclick="savePaymentConfig()">Save Payment Details</button>
                         </div>
                     </div>
-                    <div style="background: rgba(255, 90, 31, 0.05); padding: 24px; border-radius: 16px; border: 1px solid rgba(255, 90, 31, 0.2);">
+
+                    <div class="qr-box">
                         <h3>🖨️ Table QR Management</h3>
-                        <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">Generate unlimited table QR codes.</p>
-                        <div class="form-row-mini" style="margin-bottom: 20px; flex-wrap: nowrap;">
-                            <input type="text" id="dashQrTable" placeholder="Table Name/No." style="flex:1; min-width: 0;">
-                            <input type="color" id="dashQrColor" value="#FF5A1F" style="width: 50px; height: 45px; cursor: pointer; border: none; padding: 0; border-radius: 8px; flex-shrink: 0;">
-                            <button class="btn-add-inline" style="margin-top: 0; white-space: nowrap; flex-shrink: 0;" onclick="generateAndSaveQR()">+ Save QR</button>
+                        <p class="hint">Generate unlimited table QR codes.</p>
+                        <div class="form-row-mini row-nowrap" style="margin-bottom: 20px;">
+                            <input type="text" id="dashQrTable" placeholder="Table Name/No." class="f-flex">
+                            <input type="color" id="dashQrColor" value="#FF5A1F" class="color-pick">
+                            <button class="btn-add-inline btn-top0" onclick="generateAndSaveQR()">+ Save QR</button>
                         </div>
-                        <div id="savedQrGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; max-height: 300px; overflow-y: auto; padding-right: 10px;"></div>
+                        <div id="savedQrGrid" class="qr-saved-grid"></div>
                     </div>
                 </div>
             </div>

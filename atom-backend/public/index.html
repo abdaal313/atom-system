@@ -7,11 +7,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Landing Page Specific Overrides - Bulletproofed */
         body { background: #FDFBF7; overflow-x: hidden; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
-        
-        /* Navbar */
+        section { scroll-margin-top: 80px; }
+
+        /* Navbar (uses its own class names so style.css nav rules don't hide it on mobile) */
         .landing-navbar {
             display: flex !important;
             justify-content: space-between !important;
@@ -19,18 +19,25 @@
             padding: 20px 40px !important;
             position: fixed !important;
             top: 0; left: 0; right: 0;
-            background: rgba(253, 251, 247, 0.9) !important;
+            background: rgba(253, 251, 247, 0.95) !important;
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             z-index: 1000;
             border-bottom: 1px solid rgba(0,0,0,0.05);
         }
         .landing-navbar .logo { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 900; color: #111; text-decoration: none; margin: 0; }
-        .landing-navbar .nav-links { display: flex; align-items: center; gap: 30px; }
-        .landing-navbar a { text-decoration: none; color: #111; font-weight: 600; }
-        .landing-navbar .btn-login { background: #FF5A1F; color: #fff !important; padding: 10px 24px; border-radius: 50px; transition: transform 0.2s; }
-        .landing-navbar .btn-login:hover { transform: translateY(-2px); }
-        
-        /* Isolated Hero Section */
+        .landing-links { display: flex; align-items: center; gap: 30px; }
+        .landing-links a { text-decoration: none; color: #111; font-weight: 600; }
+        .landing-links .btn-login { background: #FF5A1F; color: #fff !important; padding: 10px 24px; border-radius: 50px; transition: transform 0.2s; }
+        .landing-links .btn-login:hover { transform: translateY(-2px); }
+
+        .nav-burger { display: none; background: none; border: none; cursor: pointer; flex-direction: column; gap: 5px; padding: 8px; }
+        .nav-burger span { display: block; width: 24px; height: 2.5px; background: #111; border-radius: 2px; transition: transform 0.25s, opacity 0.25s; }
+        .nav-burger.open span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+        .nav-burger.open span:nth-child(2) { opacity: 0; }
+        .nav-burger.open span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+        /* Hero */
         .landing-hero {
             min-height: 100vh;
             display: flex !important;
@@ -42,8 +49,6 @@
             padding: 100px 20px 20px 20px;
             box-sizing: border-box;
         }
-        
-        /* Inner wrapper forces elements to stack perfectly */
         .landing-hero-content {
             display: flex !important;
             flex-direction: column !important;
@@ -53,47 +58,77 @@
             margin: 0 auto;
             width: 100%;
         }
-
-        .landing-hero-content .badge {
-            background: rgba(255, 90, 31, 0.1); color: #FF5A1F; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 0.9rem; margin-bottom: 20px;
-        }
-        .landing-hero-content h1 {
-            font-family: 'Space Grotesk', sans-serif; font-size: clamp(3rem, 6vw, 5rem); font-weight: 900; color: #111; line-height: 1.1; margin: 0 0 20px 0; text-align: center;
-        }
+        .landing-hero-content .badge { background: rgba(255, 90, 31, 0.1); color: #FF5A1F; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 0.9rem; margin-bottom: 20px; }
+        .landing-hero-content h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.4rem, 6vw, 5rem); font-weight: 900; color: #111; line-height: 1.1; margin: 0 0 20px 0; text-align: center; }
         .landing-hero-content h1 span { color: #FF5A1F; }
-        .landing-hero-content p.subtitle {
-            font-size: 1.25rem; color: #555; max-width: 600px; margin: 0 0 40px 0; line-height: 1.6; text-align: center;
-        }
-        .landing-hero-content .hero-cta {
-            background: #111; color: #fff; padding: 18px 40px; border-radius: 50px; font-weight: 800; font-size: 1.2rem; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; display: inline-block; margin: 0;
-        }
-        .landing-hero-content .hero-cta:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(0,0,0,0.25); }
+        .landing-hero-content p.subtitle { font-size: 1.25rem; color: #555; max-width: 600px; margin: 0 0 40px 0; line-height: 1.6; text-align: center; }
+        .hero-cta { background: #111; color: #fff; padding: 18px 40px; border-radius: 50px; font-weight: 800; font-size: 1.2rem; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; display: inline-block; margin: 0; }
+        .hero-cta:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(0,0,0,0.25); }
 
-        /* Features Grid */
+        /* Features */
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
             gap: 40px;
             max-width: 1200px;
             margin: 0 auto;
             padding: 80px 20px;
         }
-        .feature-card {
-            background: #fff; padding: 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); transition: transform 0.3s;
-        }
+        .feature-card { background: #fff; padding: 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); transition: transform 0.3s; }
         .feature-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
         .feature-icon { font-size: 3rem; margin-bottom: 20px; }
         .feature-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; margin: 0 0 15px 0; color: #111; }
         .feature-card p { color: #666; line-height: 1.6; margin: 0; }
-        
-        @media(max-width: 768px) { .landing-navbar .nav-links a:not(.btn-login) { display: none; } .landing-navbar { padding: 20px !important; } }
+
+        /* How it works */
+        .how-wrap { padding: 100px 20px; text-align: center; background: #FDFBF7; }
+        .how-wrap h2 { font-family: 'Space Grotesk', sans-serif; font-size: 2.5rem; margin: 0 0 50px 0; color: #111; }
+        .how-steps { display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; max-width: 1000px; margin: 0 auto; }
+        .how-step { flex: 1; min-width: min(250px, 100%); text-align: left; }
+        .how-step .num { color: #FF5A1F; font-family: 'Space Grotesk', sans-serif; font-size: 4rem; font-weight: 900; margin: 0; line-height: 1; }
+        .how-step h3 { margin: 10px 0; color: #111; }
+        .how-step p { color: #666; margin: 0; line-height: 1.6; }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .landing-navbar { padding: 14px 20px !important; }
+            .landing-navbar .logo { font-size: 1.5rem; }
+            .nav-burger { display: flex; }
+            .landing-links {
+                display: none;
+                position: absolute;
+                top: 100%; left: 0; right: 0;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 6px;
+                padding: 14px 20px 20px;
+                background: #FDFBF7;
+                border-bottom: 1px solid rgba(0,0,0,0.08);
+                box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+            }
+            .landing-links.open { display: flex; }
+            .landing-links a { padding: 14px 8px; font-size: 1.05rem; border-bottom: 1px solid rgba(0,0,0,0.05); }
+            .landing-links .btn-login { text-align: center; margin-top: 10px; border-bottom: none; padding: 14px 24px; }
+
+            .landing-hero-content p.subtitle { font-size: 1.05rem; margin-bottom: 30px; }
+            .hero-cta { padding: 16px 28px; font-size: 1.05rem; }
+            .features-grid { padding: 50px 16px; gap: 20px; }
+            .feature-card { padding: 28px 22px; }
+            .how-wrap { padding: 60px 20px; }
+            .how-wrap h2 { font-size: 1.8rem; margin-bottom: 30px; }
+            .how-steps { gap: 28px; }
+            .how-step .num { font-size: 3rem; }
+        }
     </style>
 </head>
 <body>
 
     <nav class="landing-navbar">
         <a href="#" class="logo">ATOM.</a>
-        <div class="nav-links">
+        <button class="nav-burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="landing-links" id="landingLinks">
             <a href="#features">Features</a>
             <a href="#how-it-works">How it Works</a>
             <a href="login.html" class="btn-login">Login / Signup</a>
@@ -135,23 +170,23 @@
         </div>
     </section>
 
-    <section id="how-it-works" style="padding: 100px 20px; text-align: center; background: #FDFBF7;">
-        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 2.5rem; margin: 0 0 50px 0; color: #111;">From scan to served in seconds.</h2>
-        <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; max-width: 1000px; margin: 0 auto;">
-            <div style="flex: 1; min-width: 250px; text-align: left;">
-                <h1 style="color: #FF5A1F; font-family: 'Space Grotesk'; font-size: 4rem; margin: 0; line-height: 1;">1</h1>
-                <h3 style="margin: 10px 0; color: #111;">Build Your Menu</h3>
-                <p style="color: #666; margin: 0;">Upload your items, prices, and photos. Toggle items out of stock instantly if you run out of ingredients.</p>
+    <section id="how-it-works" class="how-wrap">
+        <h2>From scan to served in seconds.</h2>
+        <div class="how-steps">
+            <div class="how-step">
+                <p class="num">1</p>
+                <h3>Build Your Menu</h3>
+                <p>Upload your items, prices, and photos. Toggle items out of stock instantly if you run out of ingredients.</p>
             </div>
-            <div style="flex: 1; min-width: 250px; text-align: left;">
-                <h1 style="color: #FF5A1F; font-family: 'Space Grotesk'; font-size: 4rem; margin: 0; line-height: 1;">2</h1>
-                <h3 style="margin: 10px 0; color: #111;">Print Your QRs</h3>
-                <p style="color: #666; margin: 0;">Generate unique QR codes for every table. Print them out and stick them on your tables.</p>
+            <div class="how-step">
+                <p class="num">2</p>
+                <h3>Print Your QRs</h3>
+                <p>Generate unique QR codes for every table. Print them out and stick them on your tables.</p>
             </div>
-            <div style="flex: 1; min-width: 250px; text-align: left;">
-                <h1 style="color: #FF5A1F; font-family: 'Space Grotesk'; font-size: 4rem; margin: 0; line-height: 1;">3</h1>
-                <h3 style="margin: 10px 0; color: #111;">Collect Revenue</h3>
-                <p style="color: #666; margin: 0;">Customers scan, order, and pay. Watch your live analytics chart climb automatically.</p>
+            <div class="how-step">
+                <p class="num">3</p>
+                <h3>Collect Revenue</h3>
+                <p>Customers scan, order, and pay. Watch your live analytics chart climb automatically.</p>
             </div>
         </div>
         <a href="login.html" class="hero-cta" style="margin-top: 60px;">Launch Your Cafe Today</a>
@@ -162,10 +197,26 @@
         <p style="color: #888; font-size: 0.9rem; margin: 0 0 30px 0;">Built for the modern hospitality industry.</p>
         <div style="color: #555; font-size: 0.8rem;">
             &copy; 2024 ATOM Systems. All rights reserved.<br>
-            <a href="#" style="color: #888; text-decoration: none; margin: 0 10px;">Privacy Policy</a> | 
+            <a href="#" style="color: #888; text-decoration: none; margin: 0 10px;">Privacy Policy</a> |
             <a href="#" style="color: #888; text-decoration: none; margin: 0 10px;">Terms of Service</a>
         </div>
     </footer>
 
+    <script>
+        (function () {
+            var burger = document.getElementById('navBurger');
+            var links = document.getElementById('landingLinks');
+            function setOpen(open) {
+                links.classList.toggle('open', open);
+                burger.classList.toggle('open', open);
+                burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+            burger.addEventListener('click', function () { setOpen(!links.classList.contains('open')); });
+            links.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { setOpen(false); }); });
+            document.addEventListener('click', function (e) {
+                if (!links.contains(e.target) && !burger.contains(e.target)) setOpen(false);
+            });
+        })();
+    </script>
 </body>
 </html>
