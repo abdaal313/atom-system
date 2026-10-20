@@ -8,6 +8,8 @@ const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
+const path = require('path');
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json());
