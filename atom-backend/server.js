@@ -5,16 +5,22 @@ const QRCode = require('qrcode');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const path = require('path');
-app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
-app.use(express.json());
-
+// --- CONFIG ---
+const BASE_URL = process.env.BASE_URL || 'https://atom-system.onrender.com';
 const JWT_SECRET = process.env.JWT_SECRET || 'atom_super_secret_key_123';
+const DEV_PASSWORD = process.env.DEV_PASSWORD || 'abdal123';
+if (!process.env.JWT_SECRET) console.warn('⚠️  JWT_SECRET not set. Set it in Render Environment.');
+if (!process.env.DEV_PASSWORD) console.warn('⚠️  DEV_PASSWORD not set. Set it in Render Environment.');
+
+// --- MIDDLEWARE ---
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -29,7 +35,7 @@ const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user:
 const authenticate = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Access denied.' });
-    try { req.user = jwt.verify(token, JWT_SECRET); next(); } 
+    try { req.user = jwt.verify(token, JWT_SECRET); next(); }
     catch (err) { res.status(401).json({ error: 'Invalid token.' }); }
 };
 
@@ -44,16 +50,17 @@ const requireDeveloper = (req, res, next) => {
 };
 
 async function logActivity(userId, action) {
-    try { await pool.query('INSERT INTO activity_logs (user_id, action) VALUES (?, ?)', [userId, action]); } catch(e) {}
+    try { await pool.query('INSERT INTO activity_logs (user_id, action) VALUES (?, ?)', [userId, action]); } catch (e) {}
 }
 
 // --- AUTH & RECOVERY ROUTES ---
 app.post('/api/signup', async (req, res) => {
     try {
         const { fullName, email, password } = req.body;
+        if (!fullName || !email || !password) return res.status(400).json({ error: 'All fields are required.' });
         const hash = await bcrypt.hash(password, 10);
         const [result] = await pool.query('INSERT INTO users (fullName, email, password) VALUES (?, ?, ?)', [fullName, email, hash]);
-        await logActivity(result.insertId, `Created account`);
+        await logActivity(result.insertId, 'Created account');
         res.status(201).json({ message: 'Success' });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -61,9 +68,9 @@ app.post('/api/signup', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     try {
         const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [req.body.email]);
-        if (users.length === 0 || !(await bcrypt.compare(req.body.password, users[0].password))) return res.status(401).json({ error: 'Invalid credentials' });
+        if (users.length === 0 || !(await bcrypt.compare(req.body.password || '', users[0].password))) return res.status(401).json({ error: 'Invalid credentials' });
         const token = jwt.sign({ id: users[0].id }, JWT_SECRET, { expiresIn: '7d' });
-        await logActivity(users[0].id, `Logged in`);
+        await logActivity(users[0].id, 'Logged in');
         res.json({ message: 'Success!', name: users[0].fullName, token, userId: users[0].id });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -74,7 +81,7 @@ app.post('/api/forgot-password', async (req, res) => {
         const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (users.length === 0) return res.status(404).json({ error: 'Email not found.' });
         const resetToken = jwt.sign({ id: users[0].id }, JWT_SECRET, { expiresIn: '1h' });
-        const resetLink = `http://localhost:5500/reset-password.html?token=${resetToken}`;
+        const resetLink = `${BASE_URL}/reset-password.html?token=${resetToken}`;
         await transporter.sendMail({ from: `"ATOM" <${process.env.EMAIL_USER}>`, to: email, subject: 'Password Recovery', html: `<p><a href="${resetLink}">Reset Password</a></p>` });
         res.json({ message: 'Recovery email sent!' });
     } catch (error) { res.status(500).json({ error: error.message }); }
@@ -82,31 +89,31 @@ app.post('/api/forgot-password', async (req, res) => {
 
 // --- DASHBOARD ROUTES ---
 app.get('/api/menu', authenticate, async (req, res) => {
-    try { const [rows] = await pool.query('SELECT * FROM menu_items WHERE user_id = ? ORDER BY category', [req.user.id]); res.json(rows); } 
+    try { const [rows] = await pool.query('SELECT * FROM menu_items WHERE user_id = ? ORDER BY category', [req.user.id]); res.json(rows); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/menu', authenticate, async (req, res) => {
     try {
         const { name, price, category, photo_url, description } = req.body;
-        await pool.query('INSERT INTO menu_items (user_id, name, price, category, photo_url, description, inStock) VALUES (?, ?, ?, ?, ?, ?, true)', 
+        await pool.query('INSERT INTO menu_items (user_id, name, price, category, photo_url, description, inStock) VALUES (?, ?, ?, ?, ?, ?, true)',
             [req.user.id, name, price, category || 'General', photo_url || '', description || '']);
         res.status(201).json({ message: 'Added' });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.put('/api/menu/:id/stock', authenticate, async (req, res) => {
-    try { await pool.query('UPDATE menu_items SET inStock = ? WHERE id = ? AND user_id = ?', [req.body.inStock, req.params.id, req.user.id]); res.json({ message: 'Updated' }); } 
+    try { await pool.query('UPDATE menu_items SET inStock = ? WHERE id = ? AND user_id = ?', [req.body.inStock, req.params.id, req.user.id]); res.json({ message: 'Updated' }); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.delete('/api/menu/:id', authenticate, async (req, res) => {
-    try { await pool.query('DELETE FROM menu_items WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]); res.json({ message: 'Deleted' }); } 
+    try { await pool.query('DELETE FROM menu_items WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]); res.json({ message: 'Deleted' }); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/shops', authenticate, async (req, res) => {
-    try { const [rows] = await pool.query('SELECT * FROM shops WHERE user_id = ?', [req.user.id]); res.json(rows); } 
+    try { const [rows] = await pool.query('SELECT * FROM shops WHERE user_id = ?', [req.user.id]); res.json(rows); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -118,17 +125,17 @@ app.post('/api/shops', authenticate, async (req, res) => {
 });
 
 app.put('/api/shops/whatsapp', authenticate, async (req, res) => {
-    try { await pool.query('UPDATE shops SET chef_whatsapp = ? WHERE user_id = ? LIMIT 1', [req.body.chef_whatsapp, req.user.id]); res.json({ message: 'Updated' }); } 
+    try { await pool.query('UPDATE shops SET chef_whatsapp = ? WHERE user_id = ? LIMIT 1', [req.body.chef_whatsapp, req.user.id]); res.json({ message: 'Updated' }); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.put('/api/shops/payment', authenticate, async (req, res) => {
-    try { await pool.query('UPDATE shops SET upi_id = ?, upi_qr_url = ? WHERE user_id = ? LIMIT 1', [req.body.upi_id, req.body.upi_qr_url, req.user.id]); res.json({ message: 'Payment config updated' }); } 
+    try { await pool.query('UPDATE shops SET upi_id = ?, upi_qr_url = ? WHERE user_id = ? LIMIT 1', [req.body.upi_id, req.body.upi_qr_url, req.user.id]); res.json({ message: 'Payment config updated' }); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/employees', authenticate, async (req, res) => {
-    try { const [rows] = await pool.query('SELECT * FROM employees WHERE user_id = ?', [req.user.id]); res.json(rows); } 
+    try { const [rows] = await pool.query('SELECT * FROM employees WHERE user_id = ?', [req.user.id]); res.json(rows); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -141,7 +148,7 @@ app.post('/api/employees', authenticate, async (req, res) => {
 });
 
 app.delete('/api/employees/:id', authenticate, async (req, res) => {
-    try { await pool.query('DELETE FROM employees WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]); res.json({ message: 'Deleted' }); } 
+    try { await pool.query('DELETE FROM employees WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]); res.json({ message: 'Deleted' }); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -150,7 +157,7 @@ app.get('/api/revenue', authenticate, async (req, res) => {
         const query = `SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date_str, SUM(total_amount) as daily_revenue FROM orders WHERE user_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY date_str ORDER BY date_str ASC`;
         const [rows] = await pool.query(query, [req.user.id]);
         const chartData = { labels: [], data: [] };
-        for(let i=6; i>=0; i--) {
+        for (let i = 6; i >= 0; i--) {
             const d = new Date(); d.setDate(d.getDate() - i);
             chartData.labels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
             const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -161,7 +168,7 @@ app.get('/api/revenue', authenticate, async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- NEW: LIVE ORDERS ROUTES ---
+// --- LIVE ORDERS ---
 app.get('/api/orders', authenticate, async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC LIMIT 50', [req.user.id]);
@@ -176,16 +183,16 @@ app.put('/api/orders/:id/status', authenticate, async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- SAVED QR & PUBLIC ROUTES ---
+// --- SAVED QR ---
 app.get('/api/qr', authenticate, async (req, res) => {
-    try { const [rows] = await pool.query('SELECT * FROM qr_codes WHERE user_id = ? ORDER BY id DESC', [req.user.id]); res.json(rows); } 
+    try { const [rows] = await pool.query('SELECT * FROM qr_codes WHERE user_id = ? ORDER BY id DESC', [req.user.id]); res.json(rows); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/qr', authenticate, async (req, res) => {
     try {
         const { tableNo, color } = req.body;
-        const targetUrl = `https://abdaal313.github.io/atom-system/menu.html?cafe=${req.user.id}&table=${encodeURIComponent(tableNo)}`;
+        const targetUrl = `${BASE_URL}/menu.html?cafe=${req.user.id}&table=${encodeURIComponent(tableNo)}`;
         const qrCodeDataUrl = await QRCode.toDataURL(targetUrl, { color: { dark: color || '#FF5A1F', light: '#ffffff' }, width: 400, margin: 2 });
         await pool.query('INSERT INTO qr_codes (user_id, table_no, color, target_url, qr_data_url) VALUES (?, ?, ?, ?, ?)', [req.user.id, tableNo, color || '#FF5A1F', targetUrl, qrCodeDataUrl]);
         res.status(201).json({ message: 'QR Saved' });
@@ -193,32 +200,31 @@ app.post('/api/qr', authenticate, async (req, res) => {
 });
 
 app.delete('/api/qr/:id', authenticate, async (req, res) => {
-    try { await pool.query('DELETE FROM qr_codes WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]); res.json({ message: 'Deleted' }); } 
+    try { await pool.query('DELETE FROM qr_codes WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]); res.json({ message: 'Deleted' }); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PUBLIC: Fetch Shop Details
+// --- PUBLIC ROUTES ---
 app.get('/api/public/shop/:cafeId', async (req, res) => {
     try {
         const [shops] = await pool.query('SELECT name, photo_url, upi_id, upi_qr_url FROM shops WHERE user_id = ? LIMIT 1', [req.params.cafeId]);
-        if(shops.length > 0) res.json(shops[0]);
-        else res.status(404).json({error: "Shop not found"});
-    } catch(e) { res.status(500).json({error: e.message}); }
+        if (shops.length > 0) res.json(shops[0]);
+        else res.status(404).json({ error: 'Shop not found' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PUBLIC: Fetch Menu
 app.get('/api/public/menu/:cafeId', async (req, res) => {
-    try { const [rows] = await pool.query('SELECT * FROM menu_items WHERE user_id = ? AND inStock = true ORDER BY category', [req.params.cafeId]); res.json(rows); } 
+    try { const [rows] = await pool.query('SELECT * FROM menu_items WHERE user_id = ? AND inStock = true ORDER BY category', [req.params.cafeId]); res.json(rows); }
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PUBLIC: Order Checkout
 app.post('/api/public/order', async (req, res) => {
     try {
         const { cafeId, tableNo, cartTotal, orderDetails, paymentMethod } = req.body;
-        
+        if (!cafeId || !cartTotal || !orderDetails) return res.status(400).json({ error: 'Invalid order.' });
+
         await pool.query(
-            'INSERT INTO orders (user_id, total_amount, table_no, order_details, payment_method, status) VALUES (?, ?, ?, ?, ?, ?)', 
+            'INSERT INTO orders (user_id, total_amount, table_no, order_details, payment_method, status) VALUES (?, ?, ?, ?, ?, ?)',
             [cafeId, cartTotal, tableNo, orderDetails, paymentMethod, 'pending']
         );
 
@@ -235,24 +241,32 @@ app.post('/api/public/order', async (req, res) => {
 
 // --- DEVELOPER ROUTES ---
 app.post('/api/developer/auth', (req, res) => {
-    if (req.body.password === (process.env.DEV_PASSWORD || 'abdal123')) res.json({ success: true, token: jwt.sign({ role: 'developer' }, JWT_SECRET, { expiresIn: '2h' }) });
+    if (req.body.password === DEV_PASSWORD) res.json({ success: true, token: jwt.sign({ role: 'developer' }, JWT_SECRET, { expiresIn: '2h' }) });
     else res.status(401).json({ error: 'Invalid password' });
 });
-app.get('/api/developer/ping', async (req, res) => { res.json({ status: 'ok' }); });
+
+app.get('/api/developer/ping', (req, res) => { res.json({ status: 'ok' }); });
+
 app.get('/api/developer/stats', requireDeveloper, async (req, res) => {
     try {
-        const [[u]] = await pool.query('SELECT COUNT(*) as c FROM users'); const [[s]] = await pool.query('SELECT COUNT(*) as c FROM shops');
-        const [[p]] = await pool.query('SELECT COUNT(*) as c FROM menu_items'); const [[e]] = await pool.query('SELECT COUNT(*) as c FROM employees');
+        const [[u]] = await pool.query('SELECT COUNT(*) as c FROM users');
+        const [[s]] = await pool.query('SELECT COUNT(*) as c FROM shops');
+        const [[p]] = await pool.query('SELECT COUNT(*) as c FROM menu_items');
+        const [[e]] = await pool.query('SELECT COUNT(*) as c FROM employees');
         const [allUsers] = await pool.query(`SELECT u.id, u.fullName, u.email, (SELECT GROUP_CONCAT(name SEPARATOR ', ') FROM shops WHERE user_id = u.id) as shopNames, (SELECT COUNT(*) FROM menu_items WHERE user_id = u.id) as productCount FROM users u ORDER BY u.id DESC`);
-        res.json({ totalUsers: u.c, totalShops: s.c, totalProducts: p.c, totalEmployees: e.c, allUsers, chartData: [u.c, s.c, p.c, e.c] });
+        const [logs] = await pool.query(`SELECT a.action, a.timestamp, u.fullName FROM activity_logs a LEFT JOIN users u ON u.id = a.user_id ORDER BY a.id DESC LIMIT 50`);
+        res.json({ totalUsers: u.c, totalShops: s.c, totalProducts: p.c, totalEmployees: e.c, allUsers, logs, chartData: [u.c, s.c, p.c, e.c] });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
+
 app.get('/api/developer/impersonate/:id', requireDeveloper, async (req, res) => {
     try {
         const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
+        if (users.length === 0) return res.status(404).json({ error: 'User not found' });
         res.json({ token: jwt.sign({ id: users[0].id }, JWT_SECRET, { expiresIn: '1h' }), name: users[0].fullName, userId: users[0].id });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
 app.delete('/api/developer/users/:id', requireDeveloper, async (req, res) => {
     try {
         const userId = req.params.id;
@@ -262,9 +276,32 @@ app.delete('/api/developer/users/:id', requireDeveloper, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.post('/api/developer/broadcast', requireDeveloper, async (req, res) => {
+    try {
+        const { message } = req.body;
+        if (!message) return res.status(400).json({ error: 'Message required' });
+        const [users] = await pool.query('SELECT email FROM users');
+        if (users.length === 0) return res.json({ emailedCount: 0 });
+        await transporter.sendMail({
+            from: `"ATOM" <${process.env.EMAIL_USER}>`,
+            to: process.env.EMAIL_USER,
+            bcc: users.map(u => u.email),
+            subject: 'ATOM Announcement',
+            html: `<p>${escapeHtml(message)}</p>`
+        });
+        res.json({ emailedCount: users.length });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/developer/logs', requireDeveloper, async (req, res) => {
+    try { await pool.query('DELETE FROM activity_logs'); res.json({ message: 'Cleared' }); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- START SERVER + DB SETUP ---
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, async () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
     try {
         await pool.query(`CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, fullName VARCHAR(255) NOT NULL, email VARCHAR(255) UNIQUE NOT NULL, password VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
         await pool.query(`CREATE TABLE IF NOT EXISTS shops (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, name VARCHAR(255) NOT NULL, photo_url TEXT, chef_whatsapp VARCHAR(20), upi_id VARCHAR(100), upi_qr_url TEXT, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)`);
@@ -274,16 +311,18 @@ app.listen(PORT, async () => {
         await pool.query(`CREATE TABLE IF NOT EXISTS qr_codes (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, table_no VARCHAR(100) NOT NULL, color VARCHAR(20) DEFAULT '#FF5A1F', target_url TEXT, qr_data_url TEXT, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)`);
         await pool.query(`CREATE TABLE IF NOT EXISTS orders (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, total_amount DECIMAL(10,2) NOT NULL, status VARCHAR(50) DEFAULT 'pending', table_no VARCHAR(100) DEFAULT 'Takeaway', order_details TEXT, payment_method VARCHAR(100) DEFAULT 'Desk', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)`);
 
-        try { await pool.query(`ALTER TABLE shops ADD COLUMN chef_whatsapp VARCHAR(20)`); } catch(e) {}
-        try { await pool.query(`ALTER TABLE shops ADD COLUMN upi_id VARCHAR(100)`); } catch(e) {}
-        try { await pool.query(`ALTER TABLE shops ADD COLUMN upi_qr_url TEXT`); } catch(e) {}
-        try { await pool.query(`ALTER TABLE menu_items ADD COLUMN description TEXT`); } catch(e) {}
-        try { await pool.query(`ALTER TABLE employees ADD COLUMN phone VARCHAR(20)`); } catch(e) {}
-        try { await pool.query(`ALTER TABLE employees ADD COLUMN salary DECIMAL(10,2)`); } catch(e) {}
-        
-        try { await pool.query(`ALTER TABLE orders ADD COLUMN table_no VARCHAR(100) DEFAULT 'Takeaway'`); } catch(e) {}
-        try { await pool.query(`ALTER TABLE orders ADD COLUMN order_details TEXT`); } catch(e) {}
-        try { await pool.query(`ALTER TABLE orders ADD COLUMN payment_method VARCHAR(100) DEFAULT 'Desk'`); } catch(e) {}
+        const alters = [
+            `ALTER TABLE shops ADD COLUMN chef_whatsapp VARCHAR(20)`,
+            `ALTER TABLE shops ADD COLUMN upi_id VARCHAR(100)`,
+            `ALTER TABLE shops ADD COLUMN upi_qr_url TEXT`,
+            `ALTER TABLE menu_items ADD COLUMN description TEXT`,
+            `ALTER TABLE employees ADD COLUMN phone VARCHAR(20)`,
+            `ALTER TABLE employees ADD COLUMN salary DECIMAL(10,2)`,
+            `ALTER TABLE orders ADD COLUMN table_no VARCHAR(100) DEFAULT 'Takeaway'`,
+            `ALTER TABLE orders ADD COLUMN order_details TEXT`,
+            `ALTER TABLE orders ADD COLUMN payment_method VARCHAR(100) DEFAULT 'Desk'`
+        ];
+        for (const q of alters) { try { await pool.query(q); } catch (e) {} }
 
         console.log('✅ TiDB Database upgraded and ready!');
     } catch (err) { console.error('❌ DATABASE SETUP ERROR:', err.message); }
