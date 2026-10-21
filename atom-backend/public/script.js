@@ -59,7 +59,7 @@ function isDeveloperPage() { return !!document.getElementById('devContentWrapper
 function switchAuth(type) {
     const l = document.getElementById('loginForm'), s = document.getElementById('signupForm'), t = document.getElementById('toggleSlider');
     if (!l || !s) return;
-    const otpForm = document.getElementById('signupOtpForm'); if (otpForm) otpForm.style.display = 'none';
+    const otpForm = document.getElementById('signupOtpForm'); if (otpForm) { otpForm.classList.remove('hidden-form'); otpForm.style.display = 'none'; }
     l.classList.remove('hidden-form'); s.classList.remove('hidden-form');
     document.getElementById('toggleLogin')?.classList.toggle('active', type === 'login');
     document.getElementById('toggleSignup')?.classList.toggle('active', type !== 'login');
@@ -95,6 +95,7 @@ function checkPasswordMatch() {
 function showSignupStep(step) {
     const details = document.getElementById('signupForm'), otp = document.getElementById('signupOtpForm');
     if (!details || !otp) return;
+    [details, otp].forEach(f => { f.classList.remove('hidden-form'); f.style.opacity = '1'; f.style.transform = 'none'; });
     details.style.display = step === 'details' ? 'block' : 'none';
     otp.style.display = step === 'otp' ? 'block' : 'none';
     if (step === 'otp') setTimeout(() => document.getElementById('signupOtp')?.focus(), 50);
