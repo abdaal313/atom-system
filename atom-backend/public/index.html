@@ -6,6 +6,10 @@
     <title>ATOM | The Operating System for Modern Cafes</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script>
+        /* Play the intro once per browser session (skip if already seen) */
+        try { if (sessionStorage.getItem('atomIntroSeen')) document.documentElement.classList.add('intro-skip'); } catch (e) {}
+    </script>
     <style>
         body { background: #FDFBF7; overflow-x: hidden; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
@@ -89,6 +93,95 @@
         .how-step h3 { margin: 10px 0; color: #111; }
         .how-step p { color: #666; margin: 0; line-height: 1.6; }
 
+        /* ---------- ATOM INTRO ---------- */
+        #atomIntro {
+            position: fixed; inset: 0; z-index: 99999;
+            display: flex; align-items: center; justify-content: center;
+            background: #FDFBF7; overflow: hidden; cursor: pointer;
+            animation: introOut 0.55s ease 2.25s forwards;
+        }
+        #atomIntro::before {
+            content: ""; position: absolute;
+            width: min(75vw, 560px); height: min(75vw, 560px); border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 90, 31, 0.24) 0%, rgba(255, 90, 31, 0) 70%);
+            filter: blur(30px);
+            animation: glowPulse 2.4s ease-out both;
+        }
+        .intro-scene {
+            position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px;
+            animation: sceneZoom 0.75s cubic-bezier(0.7, 0, 0.84, 0) 1.9s forwards;
+        }
+        .intro-badge {
+            display: flex; align-items: baseline;
+            padding: clamp(16px, 4vw, 26px) clamp(26px, 7vw, 56px);
+            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1.5px solid rgba(255, 255, 255, 0.85);
+            box-shadow: 0 25px 60px rgba(255, 90, 31, 0.18), inset 0 1px 3px rgba(255, 255, 255, 0.7);
+            animation: badgeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+        }
+        .intro-word {
+            display: inline-flex;
+            font-family: 'Space Grotesk', sans-serif; font-weight: 900;
+            font-size: clamp(2.8rem, 15vw, 6rem);
+            letter-spacing: 0.14em; line-height: 1; margin-right: -0.14em;
+        }
+        .intro-word span {
+            display: inline-block; opacity: 0;
+            background: linear-gradient(135deg, #FF6E38 0%, #FF5A1F 50%, #D4420C 100%);
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+            animation: letterIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .intro-word span:nth-child(1) { animation-delay: 0.35s; }
+        .intro-word span:nth-child(2) { animation-delay: 0.47s; }
+        .intro-word span:nth-child(3) { animation-delay: 0.59s; }
+        .intro-word span:nth-child(4) { animation-delay: 0.71s; }
+        .intro-dot {
+            display: inline-block; width: clamp(10px, 2.4vw, 16px); height: clamp(10px, 2.4vw, 16px);
+            margin-left: 10px; border-radius: 50%; background: #FF5A1F;
+            box-shadow: 0 0 14px #FF5A1F; opacity: 0;
+            animation: dotPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.95s forwards;
+        }
+        .intro-tag {
+            font-family: 'Inter', sans-serif; font-weight: 600;
+            font-size: clamp(0.7rem, 2.8vw, 0.95rem);
+            letter-spacing: 0.2em; text-transform: uppercase; text-align: center;
+            color: #6E625D; opacity: 0; padding: 0 16px;
+            animation: tagIn 0.6s ease 1.15s forwards;
+        }
+        .intro-ico {
+            position: absolute; top: 50%; left: 50%; margin: -0.6em 0 0 -0.6em;
+            font-size: clamp(1.6rem, 6vw, 2.4rem); opacity: 0;
+            animation: icoPop 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) var(--d) forwards;
+        }
+        .landing-hero-content { animation: heroIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) 2.2s both; }
+
+        .intro-skip #atomIntro { display: none; }
+        .intro-skip .landing-hero-content { animation: none; }
+
+        @keyframes introOut { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+        @keyframes sceneZoom { to { transform: scale(10); opacity: 0; } }
+        @keyframes glowPulse { 0% { opacity: 0; transform: scale(0.4); } 45% { opacity: 1; } 100% { opacity: 0.8; transform: scale(1.2); } }
+        @keyframes badgeIn { from { opacity: 0; transform: scale(0.8) translateY(20px); } to { opacity: 1; transform: none; } }
+        @keyframes letterIn {
+            from { opacity: 0; transform: translateY(40px) scale(0.6) rotate(-6deg); filter: blur(8px); }
+            to { opacity: 1; transform: none; filter: blur(0); }
+        }
+        @keyframes dotPop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+        @keyframes tagIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        @keyframes icoPop {
+            0% { opacity: 0; transform: translate(0, 0) scale(0); }
+            35%, 80% { opacity: 1; transform: translate(var(--x), var(--y)) scale(1); }
+            100% { opacity: 0; transform: translate(calc(var(--x) * 1.25), calc(var(--y) * 1.25)) scale(0.8); }
+        }
+        @keyframes heroIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+        @media (prefers-reduced-motion: reduce) {
+            #atomIntro { display: none; }
+            .landing-hero-content { animation: none; }
+        }
+
         /* Mobile */
         @media (max-width: 768px) {
             .landing-navbar { padding: 14px 20px !important; }
@@ -122,6 +215,22 @@
     </style>
 </head>
 <body>
+
+    <!-- ATOM INTRO -->
+    <div id="atomIntro" aria-hidden="true">
+        <div class="intro-scene">
+            <span class="intro-ico" style="--x: calc(min(34vw, 300px) * -1); --y: -110px; --d: 0.7s;">☕</span>
+            <span class="intro-ico" style="--x: min(34vw, 300px); --y: -110px; --d: 0.85s;">🍔</span>
+            <span class="intro-ico" style="--x: calc(min(34vw, 300px) * -1); --y: 110px; --d: 1s;">📱</span>
+            <span class="intro-ico" style="--x: min(34vw, 300px); --y: 110px; --d: 1.15s;">🔔</span>
+
+            <div class="intro-badge">
+                <div class="intro-word"><span>A</span><span>T</span><span>O</span><span>M</span></div>
+                <i class="intro-dot"></i>
+            </div>
+            <div class="intro-tag">Operating system for modern cafes</div>
+        </div>
+    </div>
 
     <nav class="landing-navbar">
         <a href="#" class="logo">ATOM.</a>
@@ -196,7 +305,7 @@
         <h2 style="font-family: 'Space Grotesk', sans-serif; margin: 0 0 20px 0;">ATOM.</h2>
         <p style="color: #888; font-size: 0.9rem; margin: 0 0 30px 0;">Built for the modern hospitality industry.</p>
         <div style="color: #555; font-size: 0.8rem;">
-            &copy; 2024 ATOM Systems. All rights reserved.<br>
+            &copy; 2024 ATOM Systems. All rights reserved.@Abdal Bhatt<br>
             <a href="#" style="color: #888; text-decoration: none; margin: 0 10px;">Privacy Policy</a> |
             <a href="#" style="color: #888; text-decoration: none; margin: 0 10px;">Terms of Service</a>
         </div>
@@ -215,6 +324,26 @@
             links.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { setOpen(false); }); });
             document.addEventListener('click', function (e) {
                 if (!links.contains(e.target) && !burger.contains(e.target)) setOpen(false);
+            });
+        })();
+    </script>
+    <script>
+        /* Intro: remove after it finishes; tap anywhere to skip */
+        (function () {
+            var intro = document.getElementById('atomIntro');
+            if (!intro) return;
+            var root = document.documentElement;
+            function done() {
+                try { sessionStorage.setItem('atomIntroSeen', '1'); } catch (e) {}
+                if (intro && intro.parentNode) intro.parentNode.removeChild(intro);
+                intro = null;
+            }
+            if (root.classList.contains('intro-skip')) { done(); return; }
+            var timer = setTimeout(done, 2900);
+            intro.addEventListener('click', function () {
+                clearTimeout(timer);
+                root.classList.add('intro-skip');
+                done();
             });
         })();
     </script>
