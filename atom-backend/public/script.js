@@ -59,6 +59,7 @@ function isDeveloperPage() { return !!document.getElementById('devContentWrapper
 function switchAuth(type) {
     const l = document.getElementById('loginForm'), s = document.getElementById('signupForm'), t = document.getElementById('toggleSlider');
     if (!l || !s) return;
+    const otpForm = document.getElementById('signupOtpForm'); if (otpForm) otpForm.style.display = 'none';
     l.classList.remove('hidden-form'); s.classList.remove('hidden-form');
     document.getElementById('toggleLogin')?.classList.toggle('active', type === 'login');
     document.getElementById('toggleSignup')?.classList.toggle('active', type !== 'login');
@@ -66,23 +67,129 @@ function switchAuth(type) {
     else { l.style.display = 'none'; s.style.display = 'block'; s.style.opacity = '1'; if (t) t.style.transform = 'translateX(100%)'; }
 }
 
+// --- SIGNUP: details -> email OTP -> account created ---
+let signupResendTimer = null;
+
+function getSignupValues() {
+    const digits = (document.getElementById('signupPhone')?.value || '').replace(/\D/g, '').replace(/^0+/, '');
+    return {
+        fullName: (document.getElementById('signupName')?.value || '').trim(),
+        email: (document.getElementById('signupEmail')?.value || '').trim().toLowerCase(),
+        phoneDigits: digits,
+        phone: (document.getElementById('signupPhoneCode')?.value || '+91') + digits,
+        password: document.getElementById('signupPassword')?.value || '',
+        confirmPassword: document.getElementById('signupConfirm')?.value || ''
+    };
+}
+
+function checkPasswordMatch() {
+    const hint = document.getElementById('pwMatchHint');
+    if (!hint) return;
+    const v = getSignupValues();
+    if (!v.confirmPassword) { hint.textContent = ''; hint.className = 'pw-hint'; return; }
+    const ok = v.password === v.confirmPassword;
+    hint.textContent = ok ? '✓ Passwords match' : '✗ Passwords do not match';
+    hint.className = 'pw-hint ' + (ok ? 'ok' : 'bad');
+}
+
+function showSignupStep(step) {
+    const details = document.getElementById('signupForm'), otp = document.getElementById('signupOtpForm');
+    if (!details || !otp) return;
+    details.style.display = step === 'details' ? 'block' : 'none';
+    otp.style.display = step === 'otp' ? 'block' : 'none';
+    if (step === 'otp') setTimeout(() => document.getElementById('signupOtp')?.focus(), 50);
+}
+
+function startResendCountdown(seconds) {
+    const btn = document.getElementById('resendOtpBtn');
+    if (!btn) return;
+    if (signupResendTimer) clearInterval(signupResendTimer);
+    let left = seconds;
+    btn.disabled = true; btn.innerText = `Resend code in ${left}s`;
+    signupResendTimer = setInterval(() => {
+        left--;
+        if (left <= 0) { clearInterval(signupResendTimer); signupResendTimer = null; btn.disabled = false; btn.innerText = 'Resend code'; }
+        else { btn.innerText = `Resend code in ${left}s`; }
+    }, 1000);
+}
+
+async function requestSignupOtp() {
+    const v = getSignupValues();
+    const res = await fetch(`${API}/api/signup/request-otp`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: v.fullName, email: v.email, phone: v.phone, password: v.password, confirmPassword: v.confirmPassword })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { window.showGlobalToast(data.error || 'Could not send the code.', 'error'); return false; }
+    const label = document.getElementById('signupOtpEmail');
+    if (label) label.innerText = v.email;
+    startResendCountdown(data.resendIn || 60);
+    return true;
+}
+
+// Step 1: validate, then send the code
 async function handleSignup(e) {
     e.preventDefault();
+    const v = getSignupValues();
+    if (v.phoneDigits.length < 7 || v.phoneDigits.length > 12) return window.showGlobalToast('Enter a valid phone number.', 'error');
+    if (v.password.length < 6) return window.showGlobalToast('Password must be at least 6 characters.', 'error');
+    if (v.password !== v.confirmPassword) return window.showGlobalToast('Passwords do not match.', 'error');
+
     const btn = document.getElementById('signupBtn');
-    if (btn) { btn.innerText = 'Creating...'; btn.disabled = true; }
+    if (btn) { btn.innerText = 'Sending code...'; btn.disabled = true; }
     try {
-        const res = await fetch(`${API}/api/signup`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                fullName: document.getElementById('signupName')?.value || '',
-                email: document.getElementById('signupEmail')?.value || '',
-                password: document.getElementById('signupPassword')?.value || ''
-            })
-        });
-        if (res.ok) { window.showGlobalToast('Created! Log in.', 'success'); switchAuth('login'); }
-        else { window.showGlobalToast('Signup failed.', 'error'); }
+        if (await requestSignupOtp()) {
+            showSignupStep('otp');
+            const otpInput = document.getElementById('signupOtp'); if (otpInput) otpInput.value = '';
+            window.showGlobalToast('Verification code sent to your email.', 'success');
+        }
     } catch (err) { window.showGlobalToast('Server not reachable.', 'error'); }
-    finally { if (btn) { btn.innerText = 'Create Account'; btn.disabled = false; } }
+    finally { if (btn) { btn.innerText = 'Send Verification Code'; btn.disabled = false; } }
+}
+
+// Step 2: verify the code -> account is created
+async function handleVerifyOtp(e) {
+    e.preventDefault();
+    const otp = (document.getElementById('signupOtp')?.value || '').replace(/\D/g, '');
+    if (otp.length !== 6) return window.showGlobalToast('Enter the 6-digit code.', 'error');
+    const btn = document.getElementById('verifyOtpBtn');
+    if (btn) { btn.innerText = 'Verifying...'; btn.disabled = true; }
+    try {
+        const res = await fetch(`${API}/api/signup/verify-otp`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: getSignupValues().email, otp })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+            localStorage.setItem('atom_token', data.token);
+            localStorage.setItem('atom_cafe_id', data.userId);
+            window.showGlobalToast(`Account created! Welcome, ${data.name}`, 'success');
+            setTimeout(() => (window.location.href = 'dashboard.html'), 1200);
+        } else {
+            window.showGlobalToast(data.error || 'Verification failed.', 'error');
+            if (btn) { btn.innerText = 'Verify & Create Account'; btn.disabled = false; }
+        }
+    } catch (err) {
+        window.showGlobalToast('Server not reachable.', 'error');
+        if (btn) { btn.innerText = 'Verify & Create Account'; btn.disabled = false; }
+    }
+}
+
+async function resendSignupOtp() {
+    const btn = document.getElementById('resendOtpBtn');
+    if (btn) { btn.disabled = true; btn.innerText = 'Sending...'; }
+    try {
+        if (await requestSignupOtp()) window.showGlobalToast('New code sent. Check your inbox and spam folder.', 'success');
+        else if (btn) { btn.disabled = false; btn.innerText = 'Resend code'; }
+    } catch (err) {
+        window.showGlobalToast('Server not reachable.', 'error');
+        if (btn) { btn.disabled = false; btn.innerText = 'Resend code'; }
+    }
+}
+
+function backToSignupDetails() {
+    if (signupResendTimer) { clearInterval(signupResendTimer); signupResendTimer = null; }
+    showSignupStep('details');
 }
 
 async function handleLogin(e) {

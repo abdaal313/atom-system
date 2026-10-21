@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const path = require('path');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
@@ -77,30 +78,137 @@ async function logActivity(userId, action) {
 }
 
 // --- AUTH & RECOVERY ROUTES ---
-app.post('/api/signup', async (req, res) => {
+// --- SIGNUP WITH PHONE + EMAIL OTP ---
+app.set('trust proxy', 1);
+const OTP_TTL_MS = 10 * 60 * 1000;
+const OTP_RESEND_MS = 60 * 1000;
+const OTP_MAX_ATTEMPTS = 5;
+const normEmail = (e) => String(e || '').trim().toLowerCase();
+const normPhone = (p) => String(p || '').replace(/[\s\-()]/g, '');
+const hashOtp = (email, otp) => crypto.createHmac('sha256', JWT_SECRET).update(`${email}:${otp}`).digest('hex');
+
+// Simple per-IP limit so nobody can spam OTP emails (10 per hour)
+const otpIpHits = new Map();
+function otpIpLimit(req, res, next) {
+    const now = Date.now();
+    const rec = otpIpHits.get(req.ip);
+    if (!rec || now > rec.reset) { otpIpHits.set(req.ip, { count: 1, reset: now + 3600000 }); return next(); }
+    if (rec.count >= 10) return res.status(429).json({ error: 'Too many attempts. Please try again later.' });
+    rec.count++;
+    next();
+}
+
+const otpEmailHtml = (name, otp) => `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:20px">
+    <h2 style="color:#FF5A1F;margin:0 0 10px">Verify your email</h2>
+    <p>Hi ${escapeHtml(name)}, use this code to finish creating your ATOM account:</p>
+    <p style="font-size:34px;letter-spacing:10px;font-weight:bold;background:#FFF3EC;padding:14px 20px;border-radius:10px;text-align:center;margin:20px 0">${otp}</p>
+    <p style="color:#666;font-size:13px">This code expires in 10 minutes. If you did not request it, you can ignore this email.</p>
+</div>`;
+
+// Step 1: validate details, store them as "pending", email a 6-digit code
+app.post('/api/signup/request-otp', otpIpLimit, async (req, res) => {
     try {
-        const { fullName, email, password } = req.body;
-        if (!fullName || !email || !password) return res.status(400).json({ error: 'All fields are required.' });
+        const fullName = String(req.body.fullName || '').trim();
+        const email = normEmail(req.body.email);
+        const phone = normPhone(req.body.phone);
+        const { password, confirmPassword } = req.body;
+
+        if (!fullName || fullName.length > 100) return res.status(400).json({ error: 'Please enter your full name.' });
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Please enter a valid email address.' });
+        if (!/^\+\d{8,15}$/.test(phone)) return res.status(400).json({ error: 'Please enter a valid phone number.' });
+        if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+        if (password !== confirmPassword) return res.status(400).json({ error: 'Passwords do not match.' });
+
+        const [existing] = await pool.query('SELECT id FROM users WHERE LOWER(email) = ?', [email]);
+        if (existing.length > 0) return res.status(409).json({ error: 'An account with this email already exists. Please log in.' });
+
+        await pool.query('DELETE FROM pending_signups WHERE expires_at < ?', [Date.now()]);
+
+        const [pending] = await pool.query('SELECT last_sent_at FROM pending_signups WHERE email = ?', [email]);
+        if (pending.length > 0) {
+            const wait = OTP_RESEND_MS - (Date.now() - Number(pending[0].last_sent_at));
+            if (wait > 0) return res.status(429).json({ error: `Please wait ${Math.ceil(wait / 1000)} seconds before requesting another code.` });
+        }
+
         const hash = await bcrypt.hash(password, 10);
-        const [result] = await pool.query('INSERT INTO users (fullName, email, password) VALUES (?, ?, ?)', [fullName, email, hash]);
-        await logActivity(result.insertId, 'Created account');
-        // Welcome email (does not block signup if it fails)
+        const otp = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+        const now = Date.now();
+        await pool.query(
+            `INSERT INTO pending_signups (email, fullName, phone, password, otp_hash, expires_at, attempts, last_sent_at)
+             VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+             ON DUPLICATE KEY UPDATE fullName = VALUES(fullName), phone = VALUES(phone), password = VALUES(password),
+             otp_hash = VALUES(otp_hash), expires_at = VALUES(expires_at), attempts = 0, last_sent_at = VALUES(last_sent_at)`,
+            [email, fullName, phone, hash, hashOtp(email, otp), now + OTP_TTL_MS, now]
+        );
+
+        try {
+            await sendEmail({ to: email, subject: `${otp} is your ATOM verification code`, html: otpEmailHtml(fullName, otp) });
+        } catch (mailErr) {
+            console.error('OTP email failed:', mailErr.message);
+            await pool.query('DELETE FROM pending_signups WHERE email = ?', [email]);
+            return res.status(500).json({ error: 'Could not send the verification email. Please try again later.' });
+        }
+
+        res.json({ message: 'Verification code sent', resendIn: OTP_RESEND_MS / 1000 });
+    } catch (error) { console.error('request-otp error:', error.message); res.status(500).json({ error: 'Something went wrong. Please try again.' }); }
+});
+
+// Step 2: check the code, then actually create the account
+app.post('/api/signup/verify-otp', async (req, res) => {
+    try {
+        const email = normEmail(req.body.email);
+        const otp = String(req.body.otp || '').trim();
+        if (!/^\d{6}$/.test(otp)) return res.status(400).json({ error: 'Enter the 6-digit code.' });
+
+        const [rows] = await pool.query('SELECT * FROM pending_signups WHERE email = ?', [email]);
+        if (rows.length === 0) return res.status(400).json({ error: 'No pending signup found. Please start again.' });
+        const p = rows[0];
+
+        if (Date.now() > Number(p.expires_at)) {
+            await pool.query('DELETE FROM pending_signups WHERE email = ?', [email]);
+            return res.status(400).json({ error: 'This code has expired. Please request a new one.' });
+        }
+        if (p.attempts >= OTP_MAX_ATTEMPTS) {
+            await pool.query('DELETE FROM pending_signups WHERE email = ?', [email]);
+            return res.status(429).json({ error: 'Too many wrong attempts. Please request a new code.' });
+        }
+
+        const a = Buffer.from(hashOtp(email, otp)), b = Buffer.from(p.otp_hash);
+        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+            await pool.query('UPDATE pending_signups SET attempts = attempts + 1 WHERE email = ?', [email]);
+            const left = OTP_MAX_ATTEMPTS - (p.attempts + 1);
+            return res.status(400).json({ error: left > 0 ? `Incorrect code. ${left} attempt${left === 1 ? '' : 's'} left.` : 'Incorrect code. Please request a new one.' });
+        }
+
+        let userId;
+        try {
+            const [result] = await pool.query('INSERT INTO users (fullName, email, phone, password) VALUES (?, ?, ?, ?)', [p.fullName, p.email, p.phone, p.password]);
+            userId = result.insertId;
+        } catch (dbErr) {
+            if (dbErr.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'An account with this email already exists. Please log in.' });
+            throw dbErr;
+        }
+        await pool.query('DELETE FROM pending_signups WHERE email = ?', [email]);
+        await logActivity(userId, 'Created account (email verified)');
+
         sendEmail({
-            to: email,
+            to: p.email,
             subject: 'Welcome to ATOM',
             html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto">
-                <h2 style="color:#FF5A1F">Welcome to ATOM, ${escapeHtml(fullName)}!</h2>
+                <h2 style="color:#FF5A1F">Welcome to ATOM, ${escapeHtml(p.fullName)}!</h2>
                 <p>Your account is ready. Log in to set up your menu, QR codes and kitchen routing.</p>
                 <p><a href="${BASE_URL}/login.html" style="background:#FF5A1F;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Open Dashboard</a></p>
             </div>`
         }).catch(e => console.error('Welcome email failed:', e.message));
-        res.status(201).json({ message: 'Success' });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+
+        const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '7d' });
+        res.status(201).json({ message: 'Account created', token, userId, name: p.fullName });
+    } catch (error) { console.error('verify-otp error:', error.message); res.status(500).json({ error: 'Something went wrong. Please try again.' }); }
 });
 
 app.post('/api/login', async (req, res) => {
     try {
-        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [req.body.email]);
+        const [users] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [normEmail(req.body.email)]);
         if (users.length === 0 || !(await bcrypt.compare(req.body.password || '', users[0].password))) return res.status(401).json({ error: 'Invalid credentials' });
         const token = jwt.sign({ id: users[0].id }, JWT_SECRET, { expiresIn: '7d' });
         await logActivity(users[0].id, 'Logged in');
@@ -111,7 +219,7 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
-        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+        const [users] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [normEmail(email)]);
         if (users.length === 0) return res.status(404).json({ error: 'Email not found.' });
         const resetToken = jwt.sign({ id: users[0].id, purpose: 'reset' }, JWT_SECRET, { expiresIn: '1h' });
         const resetLink = `${BASE_URL}/reset-password.html?token=${resetToken}`;
@@ -371,7 +479,10 @@ app.listen(PORT, async () => {
         await pool.query(`CREATE TABLE IF NOT EXISTS qr_codes (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, table_no VARCHAR(100) NOT NULL, color VARCHAR(20) DEFAULT '#FF5A1F', target_url TEXT, qr_data_url TEXT, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)`);
         await pool.query(`CREATE TABLE IF NOT EXISTS orders (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, total_amount DECIMAL(10,2) NOT NULL, status VARCHAR(50) DEFAULT 'pending', table_no VARCHAR(100) DEFAULT 'Takeaway', order_details TEXT, payment_method VARCHAR(100) DEFAULT 'Desk', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)`);
 
+        await pool.query(`CREATE TABLE IF NOT EXISTS pending_signups (email VARCHAR(255) PRIMARY KEY, fullName VARCHAR(255) NOT NULL, phone VARCHAR(20) NOT NULL, password VARCHAR(255) NOT NULL, otp_hash VARCHAR(64) NOT NULL, expires_at BIGINT NOT NULL, attempts INT DEFAULT 0, last_sent_at BIGINT NOT NULL)`);
+
         const alters = [
+            `ALTER TABLE users ADD COLUMN phone VARCHAR(20)`,
             `ALTER TABLE shops ADD COLUMN chef_whatsapp VARCHAR(20)`,
             `ALTER TABLE shops ADD COLUMN upi_id VARCHAR(100)`,
             `ALTER TABLE shops ADD COLUMN upi_qr_url TEXT`,

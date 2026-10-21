@@ -24,6 +24,18 @@
         .pw-wrap .glass-input { padding-right: 48px; }
         .pw-eye { position: absolute; right: 6px; width: 40px; height: 40px; background: none; border: none; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
 
+        .phone-row { display: flex; gap: 8px; }
+        .phone-row select.glass-input { width: 104px; flex-shrink: 0; padding-left: 10px; padding-right: 6px; }
+        .phone-row input.glass-input { flex: 1; min-width: 0; }
+        .pw-hint { font-size: 0.8rem; margin-top: 6px; min-height: 1em; font-weight: 600; }
+        .pw-hint.ok { color: #1a9d4a; }
+        .pw-hint.bad { color: #d4420c; }
+        .otp-note { font-size: 0.9rem; color: #555; line-height: 1.5; margin-bottom: 16px; word-break: break-word; }
+        .otp-input { text-align: center; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.5em; text-indent: 0.5em; }
+        .otp-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+        .link-btn { background: none; border: none; color: #FF5A1F; font-weight: 600; font-size: 0.9rem; cursor: pointer; padding: 8px 0; font-family: 'Inter', sans-serif; }
+        .link-btn:disabled { color: #999; cursor: not-allowed; }
+
         @media (max-width: 480px) {
             .auth-section { padding: 10px; min-height: auto; }
             .auth-glass-panel { padding: 28px 20px; margin: 20px auto; }
@@ -84,7 +96,7 @@
                     <button type="submit" class="btn-primary-action" style="margin-top: 5px; width: 100%; border: none; cursor: pointer;">Access Dashboard</button>
                 </form>
 
-                <!-- SIGNUP FORM -->
+                <!-- SIGNUP FORM - STEP 1: DETAILS -->
                 <form id="signupForm" class="glass-form hidden-form" style="display: none;" onsubmit="handleSignup(event)">
                     <div class="input-group">
                         <label for="signupName">Full Name</label>
@@ -92,16 +104,49 @@
                     </div>
                     <div class="input-group">
                         <label for="signupEmail">Email Address</label>
-                        <input type="email" id="signupEmail" class="glass-input" required autocomplete="email">
+                        <input type="email" id="signupEmail" class="glass-input" required autocomplete="email" placeholder="you@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label for="signupPhone">Phone Number</label>
+                        <div class="phone-row">
+                            <select id="signupPhoneCode" class="glass-input" aria-label="Country code">
+                                <option value="+91">🇮🇳 +91</option>
+                                <option value="+1">🇺🇸 +1</option>
+                                <option value="+44">🇬🇧 +44</option>
+                            </select>
+                            <input type="tel" id="signupPhone" class="glass-input" required inputmode="numeric" maxlength="15" placeholder="98765 43210" autocomplete="tel-national">
+                        </div>
                     </div>
                     <div class="input-group">
                         <label for="signupPassword">Create Password</label>
                         <div class="pw-wrap">
-                            <input type="password" id="signupPassword" class="glass-input" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+                            <input type="password" id="signupPassword" class="glass-input" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password" oninput="checkPasswordMatch()">
                             <button type="button" class="pw-eye" onclick="togglePasswordVisibility('signupPassword', this)" aria-label="Show password">👁️</button>
                         </div>
                     </div>
-                    <button type="submit" id="signupBtn" class="btn-primary-action" style="margin-top: 10px; width: 100%; border: none; cursor: pointer;">Create Account</button>
+                    <div class="input-group">
+                        <label for="signupConfirm">Confirm Password</label>
+                        <div class="pw-wrap">
+                            <input type="password" id="signupConfirm" class="glass-input" required minlength="6" placeholder="Re-enter password" autocomplete="new-password" oninput="checkPasswordMatch()">
+                            <button type="button" class="pw-eye" onclick="togglePasswordVisibility('signupConfirm', this)" aria-label="Show password">👁️</button>
+                        </div>
+                        <div id="pwMatchHint" class="pw-hint"></div>
+                    </div>
+                    <button type="submit" id="signupBtn" class="btn-primary-action" style="margin-top: 10px; width: 100%; border: none; cursor: pointer;">Send Verification Code</button>
+                </form>
+
+                <!-- SIGNUP FORM - STEP 2: EMAIL OTP -->
+                <form id="signupOtpForm" class="glass-form hidden-form" style="display: none;" onsubmit="handleVerifyOtp(event)">
+                    <p class="otp-note">We sent a 6-digit code to <strong id="signupOtpEmail"></strong>. Enter it below to create your account. If you don't see it, check your spam folder.</p>
+                    <div class="input-group">
+                        <label for="signupOtp">Verification Code</label>
+                        <input type="text" id="signupOtp" class="glass-input otp-input" required inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="••••••" autocomplete="one-time-code">
+                    </div>
+                    <button type="submit" id="verifyOtpBtn" class="btn-primary-action" style="margin-top: 5px; width: 100%; border: none; cursor: pointer;">Verify &amp; Create Account</button>
+                    <div class="otp-actions">
+                        <button type="button" id="resendOtpBtn" class="link-btn" onclick="resendSignupOtp()" disabled>Resend code</button>
+                        <button type="button" class="link-btn" onclick="backToSignupDetails()">← Change details</button>
+                    </div>
                 </form>
 
             </div>
