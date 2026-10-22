@@ -36,8 +36,6 @@ const pool = mysql.createPool({
 });
 
 // --- EMAIL CONFIGURATION ---
-// Render's free plan blocks SMTP ports, so on Render we send through Brevo's HTTPS API.
-// Locally (no BREVO_API_KEY) it falls back to Gmail SMTP.
 const EMAIL_FROM = process.env.EMAIL_FROM || process.env.EMAIL_USER;
 const gmailTransporter = process.env.EMAIL_USER
     ? nodemailer.createTransport({ service: 'gmail', auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS } })
@@ -230,29 +228,30 @@ const otpEmailHtml = (name, otp) => {
 </html>`;
 };
 
-const resetPasswordEmailHtml = (resetLink) => `<!DOCTYPE html>
+const resetPasswordOtpEmailHtml = (name, otp) => {
+    const firstName = escapeHtml(String(name || '').trim().split(/\s+/)[0] || 'there');
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Reset Your ATOM Password</title>
+<title>ATOM Password Recovery Code</title>
 </head>
 <body style="margin:0;padding:0;background:#F4EFE9;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px">${otp} is your ATOM password recovery verification code.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F4EFE9">
 <tr><td align="center" style="padding:24px 12px">
   <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:22px;overflow:hidden;box-shadow:0 10px 30px rgba(42,36,33,0.08)">
     <tr><td align="center" bgcolor="#FF5A1F" style="background:#FF5A1F;background-image:linear-gradient(135deg,#FF5A1F 0%,#D4420C 100%);padding:30px 20px 26px">
       <span style="font-size:32px;font-weight:900;letter-spacing:5px;color:#ffffff">ATOM</span><span style="display:inline-block;width:9px;height:9px;background:#ffffff;border-radius:50%;margin-left:4px"></span>
-      <div style="color:#FFE5D9;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;padding-top:8px">The operating system for modern cafes</div>
+      <div style="color:#FFE5D9;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;padding-top:8px">Account Security &amp; Recovery</div>
     </td></tr>
     <tr><td align="center" style="padding:36px 30px 28px">
-      <div style="font-size:26px;font-weight:800;color:#2A2421">Reset your password 🔑</div>
-      <div style="font-size:16px;line-height:24px;color:#6E625D;padding-top:12px">Click the button below to choose a new password for your ATOM account. This link expires in 1 hour.</div>
-      <div style="padding:28px 0">
-        <a href="${resetLink}" style="display:inline-block;background:#FF5A1F;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;padding:16px 38px;border-radius:50px;box-shadow:0 8px 18px rgba(255,90,31,0.35)">Reset Password &rarr;</a>
-      </div>
-      <div style="font-size:13px;color:#888">If you did not request a password reset, you can safely ignore this email.</div>
+      <div style="font-size:26px;font-weight:800;color:#2A2421">Password Reset OTP 🔑</div>
+      <div style="font-size:16px;line-height:24px;color:#6E625D;padding-top:12px">Hi ${firstName}, enter this 6-digit verification code to recover and reset your ATOM password:</div>
+      <div style="font-size:36px;letter-spacing:10px;font-weight:900;color:#FF5A1F;background:#FFF6F0;border:2px dashed #FF5A1F;padding:18px 24px;border-radius:16px;text-align:center;margin:26px auto;max-width:280px">${otp}</div>
+      <div style="font-size:13px;color:#888">This code expires in <strong>10 minutes</strong>. If you did not request a password reset, please ignore this email—your account remains secure.</div>
     </td></tr>
     <tr><td align="center" bgcolor="#2A2421" style="background:#2A2421;padding:24px 20px">
       <div style="font-size:18px;font-weight:900;letter-spacing:4px;color:#ffffff">ATOM<span style="color:#FF5A1F">.</span></div>
@@ -263,6 +262,7 @@ const resetPasswordEmailHtml = (resetLink) => `<!DOCTYPE html>
 </table>
 </body>
 </html>`;
+};
 
 const broadcastEmailHtml = (message) => `<!DOCTYPE html>
 <html lang="en">
@@ -349,8 +349,7 @@ app.get('/', (req, res) => {
 </html>`);
 });
 
-// --- AUTH & RECOVERY ROUTES ---
-// --- SIGNUP WITH PHONE + EMAIL OTP ---
+// --- AUTH & RECOVERY HELPERS ---
 app.set('trust proxy', 1);
 const OTP_TTL_MS = 10 * 60 * 1000;
 const OTP_RESEND_MS = 60 * 1000;
@@ -370,7 +369,7 @@ function otpIpLimit(req, res, next) {
     next();
 }
 
-// Step 1: validate details, store them as "pending", email a 6-digit code
+// --- SIGNUP WITH PHONE + EMAIL OTP ---
 app.post('/api/signup/request-otp', otpIpLimit, async (req, res) => {
     try {
         const fullName = String(req.body.fullName || '').trim();
@@ -418,7 +417,6 @@ app.post('/api/signup/request-otp', otpIpLimit, async (req, res) => {
     } catch (error) { console.error('request-otp error:', error.message); res.status(500).json({ error: 'Something went wrong. Please try again.' }); }
 });
 
-// Step 2: check the code, then actually create the account
 app.post('/api/signup/verify-otp', async (req, res) => {
     try {
         const email = normEmail(req.body.email);
@@ -477,39 +475,150 @@ app.post('/api/login', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.post('/api/forgot-password', async (req, res) => {
+// --- PASSWORD RECOVERY WITH OTP VERIFICATION ---
+// Step 1: Request 6-digit Password Recovery OTP
+const handleForgotPasswordOtp = async (req, res) => {
     try {
-        const { email } = req.body;
-        const [users] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [normEmail(email)]);
-        if (users.length === 0) return res.status(404).json({ error: 'Email not found.' });
-        const resetToken = jwt.sign({ id: users[0].id, purpose: 'reset' }, JWT_SECRET, { expiresIn: '1h' });
-        const resetLink = `${BASE_URL}/reset-password.html?token=${resetToken}`;
+        const email = normEmail(req.body.email);
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ error: 'Please enter a valid email address.' });
+        }
+
+        const [users] = await pool.query('SELECT id, fullName, email FROM users WHERE LOWER(email) = ?', [email]);
+        if (users.length === 0) return res.status(404).json({ error: 'No account found with this email address.' });
+        const user = users[0];
+
+        await pool.query('DELETE FROM password_resets WHERE expires_at < ?', [Date.now()]);
+
+        const [existing] = await pool.query('SELECT last_sent_at FROM password_resets WHERE email = ?', [email]);
+        if (existing.length > 0) {
+            const wait = OTP_RESEND_MS - (Date.now() - Number(existing[0].last_sent_at));
+            if (wait > 0) {
+                return res.status(429).json({ error: `Please wait ${Math.ceil(wait / 1000)} seconds before requesting another code.` });
+            }
+        }
+
+        const otp = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+        const now = Date.now();
+
+        await pool.query(
+            `INSERT INTO password_resets (email, user_id, otp_hash, expires_at, attempts, last_sent_at)
+             VALUES (?, ?, ?, ?, 0, ?)
+             ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), otp_hash = VALUES(otp_hash),
+             expires_at = VALUES(expires_at), attempts = 0, last_sent_at = VALUES(last_sent_at)`,
+            [email, user.id, hashOtp(email, otp), now + OTP_TTL_MS, now]
+        );
+
         await sendEmail({
-            to: email,
-            subject: 'ATOM Password Recovery',
-            html: resetPasswordEmailHtml(resetLink)
+            to: user.email,
+            subject: `${otp} is your ATOM password recovery code`,
+            html: resetPasswordOtpEmailHtml(user.fullName, otp)
         });
-        res.json({ message: 'Recovery email sent!' });
+
+        res.json({ message: '6-digit recovery OTP sent to your email!', resendIn: OTP_RESEND_MS / 1000 });
     } catch (error) {
-        console.error('Forgot-password email failed:', error.message);
-        res.status(500).json({ error: 'Could not send the recovery email. Please try again later.' });
+        console.error('Forgot-password OTP error:', error.message);
+        res.status(500).json({ error: 'Could not send the recovery code. Please try again later.' });
+    }
+};
+
+app.post('/api/forgot-password', otpIpLimit, handleForgotPasswordOtp);
+app.post('/api/forgot-password/request-otp', otpIpLimit, handleForgotPasswordOtp);
+
+// Step 2: Verify Password Recovery OTP before allowing password change
+app.post('/api/forgot-password/verify-otp', async (req, res) => {
+    try {
+        const email = normEmail(req.body.email);
+        const otp = String(req.body.otp || '').trim();
+        if (!/^\d{6}$/.test(otp)) return res.status(400).json({ error: 'Please enter the 6-digit OTP code.' });
+
+        const [rows] = await pool.query('SELECT * FROM password_resets WHERE email = ?', [email]);
+        if (rows.length === 0) return res.status(400).json({ error: 'No active recovery request found. Please request a new OTP.' });
+        const r = rows[0];
+
+        if (Date.now() > Number(r.expires_at)) {
+            await pool.query('DELETE FROM password_resets WHERE email = ?', [email]);
+            return res.status(400).json({ error: 'This OTP has expired. Please request a new one.' });
+        }
+        if (r.attempts >= OTP_MAX_ATTEMPTS) {
+            await pool.query('DELETE FROM password_resets WHERE email = ?', [email]);
+            return res.status(429).json({ error: 'Too many wrong attempts. Please request a new OTP.' });
+        }
+
+        const a = Buffer.from(hashOtp(email, otp)), b = Buffer.from(r.otp_hash);
+        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+            await pool.query('UPDATE password_resets SET attempts = attempts + 1 WHERE email = ?', [email]);
+            const left = OTP_MAX_ATTEMPTS - (r.attempts + 1);
+            return res.status(400).json({ error: left > 0 ? `Incorrect OTP. ${left} attempt${left === 1 ? '' : 's'} remaining.` : 'Incorrect OTP. Please request a new code.' });
+        }
+
+        // Issue a short-lived verified reset token (15 minutes)
+        const resetToken = jwt.sign({ id: r.user_id, email, purpose: 'reset_verified' }, JWT_SECRET, { expiresIn: '15m' });
+        res.json({ verified: true, message: 'OTP verified! Enter your new password.', token: resetToken });
+    } catch (error) {
+        console.error('verify-reset-otp error:', error.message);
+        res.status(500).json({ error: 'Verification failed. Please try again.' });
     }
 });
 
+// Step 3: Set New Password (supports verified resetToken OR direct { email, otp, newPassword })
 app.post('/api/reset-password', async (req, res) => {
     try {
-        const { token, newPassword } = req.body;
-        if (!token || !newPassword) return res.status(400).json({ error: 'Token and new password are required.' });
-        if (newPassword.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
-        let decoded;
-        try { decoded = jwt.verify(token, JWT_SECRET); }
-        catch (e) { return res.status(400).json({ error: 'Reset link is invalid or has expired.' }); }
-        if (decoded.purpose !== 'reset') return res.status(400).json({ error: 'Invalid reset link.' });
+        const { token, email: rawEmail, otp: rawOtp, newPassword } = req.body;
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+        }
+
+        let userId = null;
+        let emailToClear = null;
+
+        if (token) {
+            let decoded;
+            try { decoded = jwt.verify(token, JWT_SECRET); }
+            catch (e) { return res.status(400).json({ error: 'Recovery session expired. Please verify your OTP again.' }); }
+            if (decoded.purpose !== 'reset_verified' && decoded.purpose !== 'reset') {
+                return res.status(400).json({ error: 'Invalid recovery token.' });
+            }
+            userId = decoded.id;
+            emailToClear = decoded.email;
+        } else if (rawEmail && rawOtp) {
+            const email = normEmail(rawEmail);
+            const otp = String(rawOtp).trim();
+            if (!/^\d{6}$/.test(otp)) return res.status(400).json({ error: 'Invalid 6-digit OTP.' });
+
+            const [rows] = await pool.query('SELECT * FROM password_resets WHERE email = ?', [email]);
+            if (rows.length === 0) return res.status(400).json({ error: 'No active recovery request found.' });
+            const r = rows[0];
+
+            if (Date.now() > Number(r.expires_at)) {
+                await pool.query('DELETE FROM password_resets WHERE email = ?', [email]);
+                return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+            }
+            if (r.attempts >= OTP_MAX_ATTEMPTS) {
+                await pool.query('DELETE FROM password_resets WHERE email = ?', [email]);
+                return res.status(429).json({ error: 'Too many wrong attempts. Please request a new OTP.' });
+            }
+
+            const a = Buffer.from(hashOtp(email, otp)), b = Buffer.from(r.otp_hash);
+            if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+                await pool.query('UPDATE password_resets SET attempts = attempts + 1 WHERE email = ?', [email]);
+                return res.status(400).json({ error: 'Incorrect OTP code.' });
+            }
+            userId = r.user_id;
+            emailToClear = email;
+        } else {
+            return res.status(400).json({ error: 'OTP verification is required before resetting your password.' });
+        }
+
         const hash = await bcrypt.hash(newPassword, 10);
-        await pool.query('UPDATE users SET password = ? WHERE id = ?', [hash, decoded.id]);
-        await logActivity(decoded.id, 'Reset password');
-        res.json({ message: 'Password updated' });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+        await pool.query('UPDATE users SET password = ? WHERE id = ?', [hash, userId]);
+        if (emailToClear) await pool.query('DELETE FROM password_resets WHERE email = ?', [emailToClear]);
+        await logActivity(userId, 'Reset password (OTP verified)');
+
+        res.json({ message: 'Password updated successfully! You can now log in.' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // --- DASHBOARD ROUTES ---
@@ -736,6 +845,7 @@ app.listen(PORT, async () => {
         await pool.query(`CREATE TABLE IF NOT EXISTS orders (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, total_amount DECIMAL(10,2) NOT NULL, status VARCHAR(50) DEFAULT 'pending', table_no VARCHAR(100) DEFAULT 'Takeaway', order_details TEXT, payment_method VARCHAR(100) DEFAULT 'Desk', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)`);
 
         await pool.query(`CREATE TABLE IF NOT EXISTS pending_signups (email VARCHAR(255) PRIMARY KEY, fullName VARCHAR(255) NOT NULL, phone VARCHAR(20) NOT NULL, password VARCHAR(255) NOT NULL, otp_hash VARCHAR(64) NOT NULL, expires_at BIGINT NOT NULL, attempts INT DEFAULT 0, last_sent_at BIGINT NOT NULL)`);
+        await pool.query(`CREATE TABLE IF NOT EXISTS password_resets (email VARCHAR(255) PRIMARY KEY, user_id INT NOT NULL, otp_hash VARCHAR(64) NOT NULL, expires_at BIGINT NOT NULL, attempts INT DEFAULT 0, last_sent_at BIGINT NOT NULL)`);
 
         const alters = [
             `ALTER TABLE users ADD COLUMN phone VARCHAR(20)`,
