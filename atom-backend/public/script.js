@@ -60,6 +60,9 @@ function switchAuth(type) {
     const l = document.getElementById('loginForm'), s = document.getElementById('signupForm'), t = document.getElementById('toggleSlider');
     if (!l || !s) return;
     const otpForm = document.getElementById('signupOtpForm'); if (otpForm) { otpForm.classList.remove('hidden-form'); otpForm.style.display = 'none'; }
+    ['forgotForm', 'resetForm'].forEach(id => { const f = document.getElementById(id); if (f) f.style.display = 'none'; });
+    const authToggle = document.getElementById('authToggle'); if (authToggle) authToggle.style.display = 'flex';
+    if (typeof forgotResendTimer !== 'undefined' && forgotResendTimer) { clearInterval(forgotResendTimer); forgotResendTimer = null; }
     l.classList.remove('hidden-form'); s.classList.remove('hidden-form');
     document.getElementById('toggleLogin')?.classList.toggle('active', type === 'login');
     document.getElementById('toggleSignup')?.classList.toggle('active', type !== 'login');
@@ -213,15 +216,138 @@ async function handleLogin(e) {
     finally { if (btn) { btn.innerText = 'Access Dashboard'; btn.disabled = false; } }
 }
 
-async function triggerForgotPassword(e) {
+// --- FORGOT PASSWORD: email -> 6-digit code -> new password ---
+let forgotResendTimer = null;
+let forgotEmail = '';
+const AUTH_FORM_IDS = ['loginForm', 'signupForm', 'signupOtpForm', 'forgotForm', 'resetForm'];
+
+function showOnlyForm(id) {
+    AUTH_FORM_IDS.forEach(fid => {
+        const el = document.getElementById(fid);
+        if (!el) return;
+        el.classList.remove('hidden-form');
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+        el.style.display = fid === id ? 'block' : 'none';
+    });
+}
+
+function showForgotPassword(e) {
+    if (e) e.preventDefault();
+    const toggle = document.getElementById('authToggle'); if (toggle) toggle.style.display = 'none';
+    const fe = document.getElementById('forgotEmail'), le = document.getElementById('loginEmail');
+    if (fe && le && le.value && !fe.value) fe.value = le.value;
+    showOnlyForm('forgotForm');
+    setTimeout(() => fe && fe.focus(), 50);
+}
+function triggerForgotPassword(e) { showForgotPassword(e); } // kept so older pages still work
+
+function backToLogin(e) {
+    if (e) e.preventDefault();
+    if (forgotResendTimer) { clearInterval(forgotResendTimer); forgotResendTimer = null; }
+    switchAuth('login');
+}
+
+function backToForgotEmail() {
+    if (forgotResendTimer) { clearInterval(forgotResendTimer); forgotResendTimer = null; }
+    showOnlyForm('forgotForm');
+}
+
+function startForgotCountdown(seconds) {
+    const btn = document.getElementById('resendResetBtn');
+    if (!btn) return;
+    if (forgotResendTimer) clearInterval(forgotResendTimer);
+    let left = seconds;
+    btn.disabled = true; btn.innerText = `Resend code in ${left}s`;
+    forgotResendTimer = setInterval(() => {
+        left--;
+        if (left <= 0) { clearInterval(forgotResendTimer); forgotResendTimer = null; btn.disabled = false; btn.innerText = 'Resend code'; }
+        else { btn.innerText = `Resend code in ${left}s`; }
+    }, 1000);
+}
+
+function checkResetPasswordMatch() {
+    const hint = document.getElementById('resetMatchHint');
+    if (!hint) return;
+    const pw = document.getElementById('resetPassword')?.value || '', cf = document.getElementById('resetConfirm')?.value || '';
+    if (!cf) { hint.textContent = ''; hint.className = 'pw-hint'; return; }
+    const ok = pw === cf;
+    hint.textContent = ok ? '✓ Passwords match' : '✗ Passwords do not match';
+    hint.className = 'pw-hint ' + (ok ? 'ok' : 'bad');
+}
+
+async function requestResetOtp(email) {
+    const res = await fetch(`${API}/api/forgot-password/request-otp`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { window.showGlobalToast(data.error || 'Could not send the code.', 'error'); return false; }
+    forgotEmail = email;
+    const label = document.getElementById('resetOtpEmail'); if (label) label.innerText = email;
+    startForgotCountdown(data.resendIn || 60);
+    return true;
+}
+
+// Step 1: send the code
+async function handleForgotRequest(e) {
     e.preventDefault();
-    const email = prompt('Enter your registered email address for recovery:');
-    if (!email) return;
+    const email = (document.getElementById('forgotEmail')?.value || '').trim().toLowerCase();
+    if (!email) return window.showGlobalToast('Enter your email address.', 'error');
+    const btn = document.getElementById('forgotBtn');
+    if (btn) { btn.innerText = 'Sending code...'; btn.disabled = true; }
     try {
-        const res = await fetch(`${API}/api/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-        const data = await res.json();
-        if (res.ok) window.showGlobalToast(data.message, 'success'); else window.showGlobalToast(data.error || 'Recovery failed.', 'error');
-    } catch (err) { window.showGlobalToast('Network error.', 'error'); }
+        if (await requestResetOtp(email)) {
+            ['resetOtp', 'resetPassword', 'resetConfirm'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            checkResetPasswordMatch();
+            showOnlyForm('resetForm');
+            setTimeout(() => document.getElementById('resetOtp')?.focus(), 50);
+            window.showGlobalToast('Reset code sent. Check your inbox and spam folder.', 'success');
+        }
+    } catch (err) { window.showGlobalToast('Server not reachable.', 'error'); }
+    finally { if (btn) { btn.innerText = 'Send Reset Code'; btn.disabled = false; } }
+}
+
+// Step 2: enter the code + new password
+async function handleResetPassword(e) {
+    e.preventDefault();
+    const otp = (document.getElementById('resetOtp')?.value || '').replace(/\D/g, '');
+    const newPassword = document.getElementById('resetPassword')?.value || '';
+    const confirmPassword = document.getElementById('resetConfirm')?.value || '';
+    if (otp.length !== 6) return window.showGlobalToast('Enter the 6-digit code.', 'error');
+    if (newPassword.length < 6) return window.showGlobalToast('Password must be at least 6 characters.', 'error');
+    if (newPassword !== confirmPassword) return window.showGlobalToast('Passwords do not match.', 'error');
+
+    const btn = document.getElementById('resetBtn');
+    if (btn) { btn.innerText = 'Updating...'; btn.disabled = true; }
+    try {
+        const res = await fetch(`${API}/api/forgot-password/reset`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: forgotEmail, otp, newPassword, confirmPassword })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+            window.showGlobalToast('Password updated! Please log in with your new password.', 'success');
+            const le = document.getElementById('loginEmail'); if (le) le.value = forgotEmail;
+            const lp = document.getElementById('loginPassword'); if (lp) lp.value = '';
+            backToLogin();
+            setTimeout(() => document.getElementById('loginPassword')?.focus(), 80);
+        } else {
+            window.showGlobalToast(data.error || 'Could not reset the password.', 'error');
+        }
+    } catch (err) { window.showGlobalToast('Server not reachable.', 'error'); }
+    finally { if (btn) { btn.innerText = 'Update Password'; btn.disabled = false; } }
+}
+
+async function resendResetOtp() {
+    const btn = document.getElementById('resendResetBtn');
+    if (btn) { btn.disabled = true; btn.innerText = 'Sending...'; }
+    try {
+        if (await requestResetOtp(forgotEmail)) window.showGlobalToast('New code sent. Check your inbox and spam folder.', 'success');
+        else if (btn) { btn.disabled = false; btn.innerText = 'Resend code'; }
+    } catch (err) {
+        window.showGlobalToast('Server not reachable.', 'error');
+        if (btn) { btn.disabled = false; btn.innerText = 'Resend code'; }
+    }
 }
 
 function handleLogout() {

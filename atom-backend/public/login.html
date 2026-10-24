@@ -30,6 +30,7 @@
         .pw-hint { font-size: 0.8rem; margin-top: 6px; min-height: 1em; font-weight: 600; }
         .pw-hint.ok { color: #1a9d4a; }
         .pw-hint.bad { color: #d4420c; }
+        .auth-sub-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; color: #111; margin-bottom: 8px; }
         .otp-note { font-size: 0.9rem; color: #555; line-height: 1.5; margin-bottom: 16px; word-break: break-word; }
         .otp-input { text-align: center; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.5em; text-indent: 0.5em; }
         .otp-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
@@ -68,7 +69,7 @@
         <section class="auth-section">
             <div class="auth-glass-panel">
 
-                <div class="auth-toggle-container">
+                <div class="auth-toggle-container" id="authToggle">
                     <div class="toggle-slider" id="toggleSlider"></div>
                     <button type="button" class="toggle-btn active" id="toggleLogin" onclick="switchAuth('login')">Login</button>
                     <button type="button" class="toggle-btn" id="toggleSignup" onclick="switchAuth('signup')">Sign Up</button>
@@ -90,7 +91,7 @@
                     </div>
 
                     <div style="text-align: right; margin-bottom: 15px;">
-                        <a href="#" onclick="triggerForgotPassword(event)" style="color: #FF5A1F; font-size: 0.85rem; text-decoration: none; font-weight: 600;">Forgot Password?</a>
+                        <a href="#" onclick="showForgotPassword(event)" style="color: #FF5A1F; font-size: 0.85rem; text-decoration: none; font-weight: 600;">Forgot Password?</a>
                     </div>
 
                     <button type="submit" class="btn-primary-action" style="margin-top: 5px; width: 100%; border: none; cursor: pointer;">Access Dashboard</button>
@@ -148,6 +149,51 @@
                         <button type="button" class="link-btn" onclick="backToSignupDetails()">← Change details</button>
                     </div>
                 </form>
+
+                <!-- FORGOT PASSWORD - STEP 1: EMAIL -->
+                <form id="forgotForm" class="glass-form" style="display: none;" onsubmit="handleForgotRequest(event)">
+                    <h3 class="auth-sub-title">Forgot your password?</h3>
+                    <p class="otp-note">Enter the email you signed up with. We will send you a 6-digit code to reset your password.</p>
+                    <div class="input-group">
+                        <label for="forgotEmail">Email Address</label>
+                        <input type="email" id="forgotEmail" class="glass-input" required autocomplete="email" placeholder="you@example.com">
+                    </div>
+                    <button type="submit" id="forgotBtn" class="btn-primary-action" style="margin-top: 5px; width: 100%; border: none; cursor: pointer;">Send Reset Code</button>
+                    <div class="otp-actions">
+                        <button type="button" class="link-btn" onclick="backToLogin(event)">← Back to login</button>
+                    </div>
+                </form>
+
+                <!-- FORGOT PASSWORD - STEP 2: CODE + NEW PASSWORD -->
+                <form id="resetForm" class="glass-form" style="display: none;" onsubmit="handleResetPassword(event)">
+                    <h3 class="auth-sub-title">Set a new password</h3>
+                    <p class="otp-note">We sent a 6-digit code to <strong id="resetOtpEmail"></strong>. Enter it below and choose a new password.</p>
+                    <div class="input-group">
+                        <label for="resetOtp">Verification Code</label>
+                        <input type="text" id="resetOtp" class="glass-input otp-input" required inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="••••••" autocomplete="one-time-code">
+                    </div>
+                    <div class="input-group">
+                        <label for="resetPassword">New Password</label>
+                        <div class="pw-wrap">
+                            <input type="password" id="resetPassword" class="glass-input" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password" oninput="checkResetPasswordMatch()">
+                            <button type="button" class="pw-eye" onclick="togglePasswordVisibility('resetPassword', this)" aria-label="Show password">👁️</button>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="resetConfirm">Confirm New Password</label>
+                        <div class="pw-wrap">
+                            <input type="password" id="resetConfirm" class="glass-input" required minlength="6" placeholder="Re-enter new password" autocomplete="new-password" oninput="checkResetPasswordMatch()">
+                            <button type="button" class="pw-eye" onclick="togglePasswordVisibility('resetConfirm', this)" aria-label="Show password">👁️</button>
+                        </div>
+                        <div id="resetMatchHint" class="pw-hint"></div>
+                    </div>
+                    <button type="submit" id="resetBtn" class="btn-primary-action" style="margin-top: 5px; width: 100%; border: none; cursor: pointer;">Update Password</button>
+                    <div class="otp-actions">
+                        <button type="button" id="resendResetBtn" class="link-btn" onclick="resendResetOtp()" disabled>Resend code</button>
+                        <button type="button" class="link-btn" onclick="backToForgotEmail()">← Change email</button>
+                    </div>
+                </form>
+
 
             </div>
         </section>
